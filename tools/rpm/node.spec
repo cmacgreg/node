@@ -13,27 +13,36 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 # This is updated by rpmbuild.sh.
-%define _version 0.10.12
+%define _version 4.x.y
 
-Name: node
+%{?scl:%scl_package node}
+%{!?scl:%global pkg_name %{name}}
+
+Name: %{?scl_prefix}node
 Version: %{_version}
-Release: 1
+Release: 2
 Summary: Node.js is a platform for building fast, scalable network applications.
 Group: Development/Languages
 License: MIT
 URL: https://nodejs.org/
 Source0: http://nodejs.org/dist/v%{_version}/node-v%{_version}.tar.gz
-BuildRequires: gcc
-BuildRequires: gcc-c++
-BuildRequires: glibc-devel
-BuildRequires: make
-BuildRequires: python
+#BuildRequires: gcc
+#BuildRequires: gcc-c++
+#BuildRequires: glibc-devel
+#BuildRequires: make
+#BuildRequires: python
+
+%{?scl:Requires: %scl_runtime}
+BuildRequires: scl-utils-build
+Requires: scl-utils
+BuildRequires: %{scl_prefix}gcc-c++
+# full devtoolset3 is much too large (and has broken java deps)
 
 # Conflicts with the HAM radio package.
-Conflicts: node <= 0.3.2-11
+#Conflicts: node <= 0.3.2-11
 
 # Conflicts with the Fedora node.js package.
-Conflicts: nodejs
+#Conflicts: nodejs
 
 
 %description
@@ -46,7 +55,7 @@ applications that run across distributed devices.
 
 
 %prep
-%setup -q
+%setup -q -n %{pkg_name}-%{_version}
 
 
 %build
@@ -62,7 +71,7 @@ applications that run across distributed devices.
 %define _dest_cpu x64
 %endif
 
-./configure --prefix=/usr --dest-cpu=%{_dest_cpu}
+./configure --prefix=%{_prefix} --dest-cpu=%{_dest_cpu}
 make %{?_smp_mflags}
 
 
@@ -78,29 +87,32 @@ make %{?_smp_mflags}
 %install
 export DONT_STRIP=1  # Don't strip debug symbols for now.
 make install DESTDIR=%{buildroot}
-rm -fr %{buildroot}/usr/lib/dtrace/  # No systemtap support.
-install -m 755 -d %{buildroot}/usr/lib/node_modules/
-install -m 755 -d %{buildroot}%{_datadir}/%{name}
+rm -fr %{buildroot}/%{_prefix}/lib/dtrace/  # No systemtap support.
+install -m 755 -d %{buildroot}/%{_prefix}/lib/node_modules/
+install -m 755 -d %{buildroot}/%{_datadir}/%{name}
 
 # Remove junk files from node_modules/ - we should probably take care of
 # this in the installer.
 for FILE in .gitmodules .gitignore .npmignore .travis.yml \*.py[co]; do
-  find %{buildroot}/usr/lib/node_modules/ -name "$FILE" -delete
+  find %{buildroot}/%{_prefix}/lib/node_modules/ -name "$FILE" -delete
 done
 
 
 %files
-/usr/bin/*
-/usr/include/*
-/usr/lib/node_modules/
-/usr/share/doc/node/gdbinit
-/usr/share/man/man1/node.1.gz
-/usr/share/systemtap/tapset/node.stp
-%{_datadir}/%{name}/
+%{_bindir}/*
+%{_includedir}/*
+%{_prefix}/lib/node_modules/
+%{_datadir}/doc/node/gdbinit
+%{_datadir}/man/man1/node.1.gz
+%{_datadir}/systemtap/tapset/node.stp
+%{_datadir}/doc/%{pkg_name}/
 %doc CHANGELOG.md LICENSE README.md
 
 
 %changelog
+* Tue Nov 17 2015 Craig MacGregor <craig@1stdibs.com>
+- SCL-ified
+
 * Tue Jul 7 2015 Ali Ijaz Sheikh <ofrobots@google.com>
 - Added gdbinit.
 

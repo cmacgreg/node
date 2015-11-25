@@ -14,6 +14,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+source /opt/rh/devtoolset-3/enable
+
 set -e
 
 TOOLSDIR=`dirname $0`
@@ -25,20 +27,18 @@ if [ ! -d "$RPMBUILD_PATH" ]; then
   exit 1
 fi
 
-if [ $# -ge 1 ]; then
-  VERSION=$1
-else
-  FILE="$TOPLEVELDIR/src/node_version.h"
-  MAJOR=`sed -nre 's/#define NODE_MAJOR_VERSION ([0-9]+)/\1/p' "$FILE"`
-  MINOR=`sed -nre 's/#define NODE_MINOR_VERSION ([0-9]+)/\1/p' "$FILE"`
-  PATCH=`sed -nre 's/#define NODE_PATCH_VERSION ([0-9]+)/\1/p' "$FILE"`
-  VERSION="$MAJOR.$MINOR.$PATCH"
-fi
+FILE="$TOPLEVELDIR/src/node_version.h"
+MAJOR=`sed -nre 's/#define NODE_MAJOR_VERSION ([0-9]+)/\1/p' "$FILE"`
+MINOR=`sed -nre 's/#define NODE_MINOR_VERSION ([0-9]+)/\1/p' "$FILE"`
+PATCH=`sed -nre 's/#define NODE_PATCH_VERSION ([0-9]+)/\1/p' "$FILE"`
+VERSION="$MAJOR.$MINOR.$PATCH"
+
+RELEASE=${1:-1}
 
 set -x
 
-sed -re "s/%define _version .+/%define _version ${VERSION}/" \
+sed -re "s/%define _version .+/%define _version ${VERSION}/;s/Release: .+/Release: ${RELEASE}/" \
     "$TOOLSDIR/node.spec" > $RPMBUILD_PATH/SPECS/node.spec
 tar --exclude-vcs --transform="s|^|node-${VERSION}/|" \
     -czf $RPMBUILD_PATH/SOURCES/node-v${VERSION}.tar.gz .
-rpmbuild $* -ba $RPMBUILD_PATH/SPECS/node.spec
+rpmbuild --define 'scl devtoolset-3' -ba $RPMBUILD_PATH/SPECS/node.spec
