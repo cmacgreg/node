@@ -58,7 +58,7 @@ assert.equal(secret1, secret3);
 
 // Run this one twice to make sure that the dh3 clears its error properly
 (function() {
-  var c = crypto.createDecipher('aes-128-ecb', '');
+  var c = crypto.createDecipheriv('aes-128-ecb', crypto.randomBytes(16), '');
   assert.throws(function() { c.final('utf8'); }, /wrong final block length/);
 })();
 
@@ -67,7 +67,7 @@ assert.throws(function() {
 }, /key is too small/i);
 
 (function() {
-  var c = crypto.createDecipher('aes-128-ecb', '');
+  var c = crypto.createDecipheriv('aes-128-ecb', crypto.randomBytes(16), '');
   assert.throws(function() { c.final('utf8'); }, /wrong final block length/);
 })();
 
@@ -171,7 +171,7 @@ var ecdh3 = crypto.createECDH('secp256k1');
 var key3 = ecdh3.generateKeys();
 
 assert.throws(function() {
-  var secret3 = ecdh2.computeSecret(key3, 'binary', 'buffer');
+  ecdh2.computeSecret(key3, 'binary', 'buffer');
 });
 
 // ECDH should allow .setPrivateKey()/.setPublicKey()

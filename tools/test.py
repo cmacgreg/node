@@ -145,6 +145,7 @@ class ProgressIndicator(object):
           sys.platform == 'sunos5' and
           'ECONNREFUSED' in output.output.stderr):
             output = case.Run()
+            output.diagnostic.append('ECONNREFUSED received, test retried')
         case.duration = (datetime.now() - start)
       except IOError, e:
         return
@@ -255,6 +256,10 @@ class DotsProgressIndicator(SimpleProgressIndicator):
 
 class TapProgressIndicator(SimpleProgressIndicator):
 
+  def _printDiagnostic(self, messages):
+    for l in messages.splitlines():
+      logger.info('# ' + l)
+
   def Starting(self):
     logger.info('1..%i' % len(self.cases))
     self._done = 0
@@ -270,14 +275,13 @@ class TapProgressIndicator(SimpleProgressIndicator):
       if FLAKY in output.test.outcomes and self.flaky_tests_mode == DONTCARE:
         status_line = status_line + ' # TODO : Fix flaky test'
       logger.info(status_line)
+      self._printDiagnostic("\n".join(output.diagnostic))
 
       if output.HasTimedOut():
-        logger.info('# TIMEOUT')
+        self._printDiagnostic('TIMEOUT')
 
-      for l in output.output.stderr.splitlines():
-        logger.info('#' + l)
-      for l in output.output.stdout.splitlines():
-        logger.info('#' + l)
+      self._printDiagnostic(output.output.stderr)
+      self._printDiagnostic(output.output.stdout)
     else:
       skip = skip_regex.search(output.output.stdout)
       if skip:
@@ -288,6 +292,7 @@ class TapProgressIndicator(SimpleProgressIndicator):
         if FLAKY in output.test.outcomes:
           status_line = status_line + ' # TODO : Fix flaky test'
         logger.info(status_line)
+      self._printDiagnostic("\n".join(output.diagnostic))
 
     duration = output.test.duration
 
@@ -490,6 +495,7 @@ class TestOutput(object):
     self.command = command
     self.output = output
     self.store_unexpected_output = store_unexpected_output
+    self.diagnostic = []
 
   def UnexpectedOutput(self):
     if self.HasCrashed():
@@ -1304,6 +1310,8 @@ def BuildOptions():
   result.add_option("-r", "--run",
       help="Divide the tests in m groups (interleaved) and run tests from group n (--run=n,m with n < m)",
       default="")
+  result.add_option('--temp-dir',
+      help='Optional path to change directory used for tests', default=False)
   return result
 
 
@@ -1331,7 +1339,10 @@ def ProcessOptions(options):
       print "The test group to run (n) must be smaller than number of groups (m)."
       return False
   if options.J:
-    options.j = multiprocessing.cpu_count()
+    # inherit JOBS from environment if provided. some virtualised systems
+    # tends to exaggerate the number of available cpus/cores.
+    cores = os.environ.get('JOBS')
+    options.j = int(cores) if cores is not None else multiprocessing.cpu_count()
   if options.flaky_tests not in ["run", "skip", "dontcare"]:
     print "Unknown flaky-tests mode %s" % options.flaky_tests
     return False
@@ -1531,6 +1542,16 @@ def Main():
   if options.warn_unused:
     for rule in globally_unused_rules:
       print "Rule for '%s' was not used." % '/'.join([str(s) for s in rule.path])
+
+  tempdir = os.environ.get('NODE_TEST_DIR') or options.temp_dir
+  if tempdir:
+    try:
+      os.makedirs(tempdir)
+      os.environ['NODE_TEST_DIR'] = tempdir
+    except OSError as exception:
+      if exception.errno != errno.EEXIST:
+        print "Could not create the temporary directory", options.temp_dir
+        sys.exit(1)
 
   if options.report:
     PrintReport(all_cases)
