@@ -15,6 +15,7 @@ if /i "%1"=="/?" goto help
 set config=Release
 set target=Build
 set target_arch=x86
+set target_env=
 set noprojgen=
 set nobuild=
 set nosign=
@@ -43,6 +44,8 @@ if /i "%1"=="clean"         set target=Clean&goto arg-ok
 if /i "%1"=="ia32"          set target_arch=x86&goto arg-ok
 if /i "%1"=="x86"           set target_arch=x86&goto arg-ok
 if /i "%1"=="x64"           set target_arch=x64&goto arg-ok
+if /i "%1"=="vc2013"        set target_env=vc2013&goto arg-ok
+if /i "%1"=="vc2015"        set target_env=vc2015&goto arg-ok
 if /i "%1"=="noprojgen"     set noprojgen=1&goto arg-ok
 if /i "%1"=="nobuild"       set nobuild=1&goto arg-ok
 if /i "%1"=="nosign"        set nosign=1&goto arg-ok
@@ -58,6 +61,7 @@ if /i "%1"=="test-gc"       set test_args=%test_args% gc&set buildnodeweak=1&got
 if /i "%1"=="test-internet" set test_args=%test_args% internet&goto arg-ok
 if /i "%1"=="test-pummel"   set test_args=%test_args% pummel&goto arg-ok
 if /i "%1"=="test-all"      set test_args=%test_args% sequential parallel message gc internet pummel&set buildnodeweak=1&set jslint=1&goto arg-ok
+if /i "%1"=="test-known-issues" set test_args=%test_args% known_issues --expect-fail&goto arg-ok
 if /i "%1"=="jslint"        set jslint=1&goto arg-ok
 if /i "%1"=="msi"           set msi=1&set licensertf=1&set download_arg="--download=all"&set i18n_arg=small-icu&goto arg-ok
 if /i "%1"=="build-release" set build_release=1&goto arg-ok
@@ -107,6 +111,7 @@ call :getnodeversion || exit /b 1
 
 @rem Set environment for msbuild
 
+if defined target_env if "%target_env%" NEQ "vc2015" goto vc-set-2013
 @rem Look for Visual Studio 2015
 echo Looking for Visual Studio 2015
 if not defined VS140COMNTOOLS goto vc-set-2013
@@ -130,6 +135,7 @@ set PLATFORM_TOOLSET=v140
 goto msbuild-found
 
 :vc-set-2013
+if defined target_env if "%target_env%" NEQ "vc2013" goto msbuild-not-found
 @rem Look for Visual Studio 2013
 echo Looking for Visual Studio 2013
 if not defined VS120COMNTOOLS goto msbuild-not-found
@@ -140,7 +146,7 @@ if defined msi (
   if not exist "%WIX%\SDK\VS2013" (
     echo Failed to find WiX install for Visual Studio 2013
     echo VS2013 support for WiX is only present starting at version 3.8
-    goto vc-set-2012
+    goto wix-not-found
   )
 )
 if "%VCVARS_VER%" NEQ "120" (
@@ -178,7 +184,9 @@ echo Project files generated.
 if defined nobuild goto sign
 
 @rem Build the sln with msbuild.
-msbuild node.sln /m /t:%target% /p:Configuration=%config% /clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal /nologo
+set "msbplatform=Win32"
+if "%target_arch%"=="x64" set "msbplatform=x64"
+msbuild node.sln /m /t:%target% /p:Configuration=%config% /p:Platform=%msbplatform% /clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal /nologo
 if errorlevel 1 goto exit
 if "%target%" == "Clean" goto exit
 
@@ -251,7 +259,7 @@ goto jslint
 :jslint
 if not defined jslint goto exit
 echo running jslint
-%config%\node tools\eslint\bin\eslint.js src lib test tools\eslint-rules --rulesdir tools\eslint-rules --quiet
+%config%\node tools\eslint\bin\eslint.js benchmark lib src test tools\doc tools\eslint-rules --rulesdir tools\eslint-rules
 goto exit
 
 :create-msvs-files-failed
@@ -259,7 +267,9 @@ echo Failed to create vc project files.
 goto exit
 
 :help
-echo vcbuild.bat [debug/release] [msi] [test-all/test-uv/test-internet/test-pummel/test-simple/test-message] [clean] [noprojgen] [small-icu/full-icu/intl-none] [nobuild] [nosign] [x86/x64] [download-all]
+
+echo vcbuild.bat [debug/release] [msi] [test-all/test-uv/test-internet/test-pummel/test-simple/test-message] [clean] [noprojgen] [small-icu/full-icu/intl-none] [nobuild] [nosign] [x86/x64] [vc2013/vc2015] [download-all]
+
 echo Examples:
 echo   vcbuild.bat                : builds release build
 echo   vcbuild.bat debug          : builds debug build

@@ -1,4 +1,5 @@
-var url = require('url')
+'use strict';
+var url = require('url');
 var n = 25 * 100;
 
 var urls = [
@@ -20,7 +21,7 @@ benchmark('parse()', url.parse);
 benchmark('format()', url.format);
 paths.forEach(function(p) {
   benchmark('resolve("' + p + '")', function(u) {
-    url.resolve(u, p)
+    url.resolve(u, p);
   });
 });
 

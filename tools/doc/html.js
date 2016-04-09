@@ -1,12 +1,22 @@
+'use strict';
+
 var fs = require('fs');
 var marked = require('marked');
 var path = require('path');
 var preprocess = require('./preprocess.js');
+var typeParser = require('./type-parser.js');
 
 module.exports = toHTML;
 
 // TODO(chrisdickinson): never stop vomitting / fix this.
-var gtocPath = path.resolve(path.join(__dirname, '..', '..', 'doc', 'api', '_toc.markdown'));
+var gtocPath = path.resolve(path.join(
+  __dirname,
+    '..',
+    '..',
+    'doc',
+    'api',
+    '_toc.markdown'
+));
 var gtocLoading = null;
 var gtocData = null;
 
@@ -55,7 +65,10 @@ function loadGtoc(cb) {
 }
 
 function toID(filename) {
-  return filename.replace('.html', '').replace(/[^\w\-]/g, '-').replace(/-+/g, '-');
+  return filename
+    .replace('.html', '')
+    .replace(/[^\w\-]/g, '-')
+    .replace(/-+/g, '-');
 }
 
 function render(lexed, filename, template, cb) {
@@ -64,6 +77,7 @@ function render(lexed, filename, template, cb) {
 
   filename = path.basename(filename, '.markdown');
 
+  parseText(lexed);
   lexed = parseLists(lexed);
 
   // generate the table of contents.
@@ -85,13 +99,22 @@ function render(lexed, filename, template, cb) {
 
     // content has to be the last thing we do with
     // the lexed tokens, because it's destructive.
-    content = marked.parser(lexed);
+    const content = marked.parser(lexed);
     template = template.replace(/__CONTENT__/g, content);
 
     cb(null, template);
   });
 }
 
+// handle general body-text replacements
+// for example, link man page references to the actual page
+function parseText(lexed) {
+  lexed.forEach(function(tok) {
+    if (tok.text && tok.type !== 'code') {
+      tok.text = linkManPages(tok.text);
+    }
+  });
+}
 
 // just update the list item text in-place.
 // lists that come right after a heading are what we're after.
@@ -106,7 +129,8 @@ function parseLists(input) {
       output.push({ type: 'html', text: tok.text });
       return;
     }
-    if (state === null) {
+    if (state === null ||
+      (state === 'AFTERHEADING' && tok.type === 'heading')) {
       if (tok.type === 'heading') {
         state = 'AFTERHEADING';
       }
@@ -135,11 +159,11 @@ function parseLists(input) {
       }
       if (tok.type === 'list_end') {
         depth--;
+        output.push(tok);
         if (depth === 0) {
           state = null;
           output.push({ type:'html', text: '</div>' });
         }
-        output.push(tok);
         return;
       }
       if (tok.text) {
@@ -153,12 +177,40 @@ function parseLists(input) {
 }
 
 
+// Syscalls which appear in the docs, but which only exist in BSD / OSX
+var BSD_ONLY_SYSCALLS = new Set(['lchmod']);
+
+// Handle references to man pages, eg "open(2)" or "lchmod(2)"
+// Returns modified text, with such refs replace with HTML links, for example
+// '<a href="http://man7.org/linux/man-pages/man2/open.2.html">open(2)</a>'
+function linkManPages(text) {
+  return text.replace(/ ([a-z]+)\((\d)\)/gm, function(match, name, number) {
+    // name consists of lowercase letters, number is a single digit
+    var displayAs = name + '(' + number + ')';
+    if (BSD_ONLY_SYSCALLS.has(name)) {
+      return ' <a href="https://www.freebsd.org/cgi/man.cgi?query=' + name +
+             '&sektion=' + number + '">' + displayAs + '</a>';
+    } else {
+      return ' <a href="http://man7.org/linux/man-pages/man' + number +
+             '/' + name + '.' + number + '.html">' + displayAs + '</a>';
+    }
+  });
+}
+
 function parseListItem(text) {
   var parts = text.split('`');
   var i;
+  var typeMatches;
 
+  // Handle types, for example the source Markdown might say
+  // "This argument should be a {Number} or {String}"
   for (i = 0; i < parts.length; i += 2) {
-    parts[i] = parts[i].replace(/\{([^\}]+)\}/, '<span class="type">$1</span>');
+    typeMatches = parts[i].match(/\{([^\}]+)\}/g);
+    if (typeMatches) {
+      typeMatches.forEach(function(typeMatch) {
+        parts[i] = parts[i].replace(typeMatch, typeParser.toLink(typeMatch));
+      });
+    }
   }
 
   //XXX maybe put more stuff here?
@@ -166,14 +218,15 @@ function parseListItem(text) {
 }
 
 function parseAPIHeader(text) {
-  text = text.replace(/(.*:)\s(\d)([\s\S]*)/,
-                      '<pre class="api_stability_$2">$1 $2$3</pre>');
+  text = text.replace(
+    /(.*:)\s(\d)([\s\S]*)/,
+    '<pre class="api_stability api_stability_$2">$1 $2$3</pre>'
+  );
   return text;
 }
 
 // section is just the first heading
 function getSection(lexed) {
-  var section = '';
   for (var i = 0, l = lexed.length; i < l; i++) {
     var tok = lexed[i];
     if (tok.type === 'heading') return tok.text;
@@ -183,7 +236,6 @@ function getSection(lexed) {
 
 
 function buildToc(lexed, filename, cb) {
-  var indent = 0;
   var toc = [];
   var depth = 0;
   lexed.forEach(function(tok) {
@@ -219,4 +271,3 @@ function getId(text) {
   }
   return text;
 }
-

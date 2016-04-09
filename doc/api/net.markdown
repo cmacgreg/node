@@ -19,14 +19,14 @@ event is not emitted until all connections are ended.
 
 ### Event: 'connection'
 
-* {Socket object} The connection object
+* {net.Socket} The connection object
 
 Emitted when a new connection is made. `socket` is an instance of
 `net.Socket`.
 
 ### Event: 'error'
 
-* {Error Object}
+* {Error}
 
 Emitted when an error occurs.  The [`'close'`][] event will be called directly
 following this event.  See example in discussion of `server.listen`.
@@ -45,15 +45,20 @@ Returns an object with three properties, e.g.
 
 Example:
 
-    var server = net.createServer((socket) => {
-      socket.end('goodbye\n');
-    });
+```js
+var server = net.createServer((socket) => {
+  socket.end('goodbye\n');
+}).on('error', (err) => {
+  // handle errors here
+  throw err;
+});
 
-    // grab a random port.
-    server.listen(() => {
-      address = server.address();
-      console.log('opened server on %j', address);
-    });
+// grab a random port.
+server.listen(() => {
+  address = server.address();
+  console.log('opened server on %j', address);
+});
+```
 
 Don't call `server.address()` until the `'listening'` event has been emitted.
 
@@ -68,7 +73,7 @@ was not open when it was closed.
 
 ### server.connections
 
-    Stability: 0 - Deprecated: Use [`server.getConnections`][] instead.
+    Stability: 0 - Deprecated: Use [`server.getConnections()`][] instead.
 
 The number of concurrent connections on the server.
 
@@ -104,7 +109,7 @@ The last parameter `callback` will be added as a listener for the
 [`'listening'`][] event.
 
 The parameter `backlog` behaves the same as in
-[`server.listen(port, \[host\], \[backlog\], \[callback\])`][].
+[`server.listen(port[, hostname][, backlog][, callback])`][`server.listen(port, host, backlog, callback)`].
 
 ### server.listen(options[, callback])
 
@@ -118,8 +123,8 @@ The parameter `backlog` behaves the same as in
 
 The `port`, `host`, and `backlog` properties of `options`, as well as the
 optional callback function, behave as they do on a call to
-[`server.listen(port, \[host\], \[backlog\], \[callback\])`][]. Alternatively,
-the `path` option can be used to specify a UNIX socket.
+[`server.listen(port[, hostname][, backlog][, callback])`][`server.listen(port, host, backlog, callback)`].
+Alternatively, the `path` option can be used to specify a UNIX socket.
 
 If `exclusive` is `false` (default), then cluster workers will use the same
 underlying handle, allowing connection handling duties to be shared. When
@@ -127,11 +132,13 @@ underlying handle, allowing connection handling duties to be shared. When
 results in an error. An example which listens on an exclusive port is
 shown below.
 
-    server.listen({
-      host: 'localhost',
-      port: 80,
-      exclusive: true
-    });
+```js
+server.listen({
+  host: 'localhost',
+  port: 80,
+  exclusive: true
+});
+```
 
 ### server.listen(path[, backlog][, callback])
 
@@ -162,7 +169,7 @@ double-backslashes, such as:
         path.join('\\\\?\\pipe', process.cwd(), 'myctl'))
 
 The parameter `backlog` behaves the same as in
-[`server.listen(port, \[host\], \[backlog\], \[callback\])`][].
+[`server.listen(port[, hostname][, backlog][, callback])`][`server.listen(port, host, backlog, callback)`].
 
 ### server.listen(port[, hostname][, backlog][, callback])
 
@@ -184,15 +191,17 @@ One issue some users run into is getting `EADDRINUSE` errors. This means that
 another server is already running on the requested port. One way of handling this
 would be to wait a second and then try again. This can be done with
 
-    server.on('error', (e) => {
-      if (e.code == 'EADDRINUSE') {
-        console.log('Address in use, retrying...');
-        setTimeout(() => {
-          server.close();
-          server.listen(PORT, HOST);
-        }, 1000);
-      }
-    });
+```js
+server.on('error', (e) => {
+  if (e.code == 'EADDRINUSE') {
+    console.log('Address in use, retrying...');
+    setTimeout(() => {
+      server.close();
+      server.listen(PORT, HOST);
+    }, 1000);
+  }
+});
+```
 
 (Note: All sockets in Node.js set `SO_REUSEADDR` already)
 
@@ -233,11 +242,14 @@ Construct a new socket object.
 
 `options` is an object with the following defaults:
 
-    { fd: null,
-      allowHalfOpen: false,
-      readable: false,
-      writable: false
-    }
+```js
+{
+  fd: null,
+  allowHalfOpen: false,
+  readable: false,
+  writable: false
+}
+```
 
 `fd` allows you to specify the existing file descriptor of socket.
 Set `readable` and/or `writable` to `true` to allow reads and/or writes on this
@@ -260,7 +272,7 @@ See [`connect()`][].
 
 ### Event: 'data'
 
-* {Buffer object}
+* {Buffer}
 
 Emitted when data is received.  The argument `data` will be a `Buffer` or
 `String`.  Encoding of data is set by `socket.setEncoding()`.
@@ -287,7 +299,7 @@ caveat that the user is required to `end()` their side now.
 
 ### Event: 'error'
 
-* {Error object}
+* {Error}
 
 Emitted when an error occurs.  The `'close'` event will be called directly
 following this event.
@@ -297,9 +309,9 @@ following this event.
 Emitted after resolving the hostname but before connecting.
 Not applicable to UNIX sockets.
 
-* `err` {Error | Null} The error object.  See [`dns.lookup()`][].
+* `err` {Error|Null} The error object.  See [`dns.lookup()`][].
 * `address` {String} The IP address.
-* `family` {String | Null} The address type.  See [`dns.lookup()`][].
+* `family` {String|Null} The address type.  See [`dns.lookup()`][].
 
 ### Event: 'timeout'
 
@@ -377,7 +389,7 @@ The `connectListener` parameter will be added as a listener for the
 ### socket.connect(path[, connectListener])
 ### socket.connect(port[, host][, connectListener])
 
-As [`socket.connect(options\[, connectListener\])`][],
+As [`socket.connect(options\[, connectListener\])`][`socket.connect(options, connectListener)`],
 with options either as either `{port: port, host: host}` or `{path: path}`.
 
 ### socket.destroy()
@@ -512,23 +524,28 @@ The `connectListener` parameter will be added as a listener for the
 
 Here is an example of a client of the previously described echo server:
 
-    const net = require('net');
-    const client = net.connect({port: 8124}, () => { //'connect' listener
-      console.log('connected to server!');
-      client.write('world!\r\n');
-    });
-    client.on('data', (data) => {
-      console.log(data.toString());
-      client.end();
-    });
-    client.on('end', () => {
-      console.log('disconnected from server');
-    });
+```js
+const net = require('net');
+const client = net.connect({port: 8124}, () => {
+  // 'connect' listener
+  console.log('connected to server!');
+  client.write('world!\r\n');
+});
+client.on('data', (data) => {
+  console.log(data.toString());
+  client.end();
+});
+client.on('end', () => {
+  console.log('disconnected from server');
+});
+```
 
 To connect on the socket `/tmp/echo.sock` the second line would just be
 changed to
 
-    const client = net.connect({path: '/tmp/echo.sock'});
+```js
+const client = net.connect({path: '/tmp/echo.sock'});
+```
 
 ## net.connect(path[, connectListener])
 
@@ -561,24 +578,28 @@ The `connectListener` parameter will be added as a listener for the
 
 Here is an example of a client of the previously described echo server:
 
-    const net = require('net');
-    const client = net.connect({port: 8124},
-        () => { //'connect' listener
-      console.log('connected to server!');
-      client.write('world!\r\n');
-    });
-    client.on('data', (data) => {
-      console.log(data.toString());
-      client.end();
-    });
-    client.on('end', () => {
-      console.log('disconnected from server');
-    });
+```js
+const net = require('net');
+const client = net.createConnection({port: 8124}, () => {
+  //'connect' listener
+  console.log('connected to server!');
+  client.write('world!\r\n');
+});
+client.on('data', (data) => {
+  console.log(data.toString());
+  client.end();
+});
+client.on('end', () => {
+  console.log('disconnected from server');
+});
+```
 
 To connect on the socket `/tmp/echo.sock` the second line would just be
 changed to
 
-    const client = net.connect({path: '/tmp/echo.sock'});
+```js
+const client = net.connect({path: '/tmp/echo.sock'});
+```
 
 ## net.createConnection(path[, connectListener])
 
@@ -605,10 +626,12 @@ automatically set as a listener for the [`'connection'`][] event.
 
 `options` is an object with the following defaults:
 
-    {
-      allowHalfOpen: false,
-      pauseOnConnect: false
-    }
+```js
+{
+  allowHalfOpen: false,
+  pauseOnConnect: false
+}
+```
 
 If `allowHalfOpen` is `true`, then the socket won't automatically send a FIN
 packet when the other end of the socket sends a FIN packet. The socket becomes
@@ -623,31 +646,45 @@ original process. To begin reading data from a paused socket, call [`resume()`][
 Here is an example of an echo server which listens for connections
 on port 8124:
 
-    const net = require('net');
-    const server = net.createServer((c) => { //'connection' listener
-      console.log('client connected');
-      c.on('end', () => {
-        console.log('client disconnected');
-      });
-      c.write('hello\r\n');
-      c.pipe(c);
-    });
-    server.listen(8124, () => { //'listening' listener
-      console.log('server bound');
-    });
+```js
+const net = require('net');
+const server = net.createServer((c) => {
+  // 'connection' listener
+  console.log('client connected');
+  c.on('end', () => {
+    console.log('client disconnected');
+  });
+  c.write('hello\r\n');
+  c.pipe(c);
+});
+server.on('error', (err) => {
+  throw err;
+});
+server.listen(8124, () => {
+  console.log('server bound');
+});
+```
 
 Test this by using `telnet`:
 
-    telnet localhost 8124
+```
+telnet localhost 8124
+```
 
 To listen on the socket `/tmp/echo.sock` the third line from the last would
 just be changed to
 
-    server.listen('/tmp/echo.sock', () => { //'listening' listener
+```js
+server.listen('/tmp/echo.sock', () => {
+  console.log('server bound');
+});
+```
 
 Use `nc` to connect to a UNIX domain socket server:
 
-    nc -U /tmp/echo.sock
+```js
+nc -U /tmp/echo.sock
+```
 
 ## net.isIP(input)
 
@@ -682,9 +719,9 @@ Returns true if input is a version 6 IP address, otherwise returns false.
 [`net.Socket`]: #net_class_net_socket
 [`pause()`]: #net_socket_pause
 [`resume()`]: #net_socket_resume
-[`server.getConnections`]: #net_server_getconnections_callback
-[`server.listen(port, \[host\], \[backlog\], \[callback\])`]: #net_server_listen_port_hostname_backlog_callback
-[`socket.connect(options\[, connectListener\])`]: #net_socket_connect_options_connectlistener
+[`server.getConnections()`]: #net_server_getconnections_callback
+[`server.listen(port, host, backlog, callback)`]: #net_server_listen_port_hostname_backlog_callback
+[`socket.connect(options, connectListener)`]: #net_socket_connect_options_connectlistener
 [`socket.connect`]: #net_socket_connect_options_connectlistener
 [`socket.setTimeout()`]: #net_socket_settimeout_timeout_callback
 [`stream.setEncoding()`]: stream.html#stream_readable_setencoding_encoding

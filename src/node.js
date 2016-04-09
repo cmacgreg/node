@@ -12,12 +12,14 @@
 
   function startup() {
     var EventEmitter = NativeModule.require('events');
+    process._eventsCount = 0;
 
-    process.__proto__ = Object.create(EventEmitter.prototype, {
+    Object.setPrototypeOf(process, Object.create(EventEmitter.prototype, {
       constructor: {
         value: process.constructor
       }
-    });
+    }));
+
     EventEmitter.call(process);
 
     process.EventEmitter = EventEmitter; // process.EventEmitter is deprecated
@@ -66,6 +68,9 @@
     } else if (process.argv[1] == '--debug-agent') {
       // Start the debugger agent
       NativeModule.require('_debug_agent').start();
+
+    } else if (process.profProcess) {
+      NativeModule.require('internal/v8_prof_processor');
 
     } else {
       // There is user code to be run
@@ -782,7 +787,8 @@
     var signalWraps = {};
 
     function isSignal(event) {
-      return event.slice(0, 3) === 'SIG' &&
+      return typeof event === 'string' &&
+             event.slice(0, 3) === 'SIG' &&
              startup.lazyConstants().hasOwnProperty(event);
     }
 

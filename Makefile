@@ -168,6 +168,9 @@ test-internet: all
 test-debugger: all
 	$(PYTHON) tools/test.py debugger
 
+test-known-issues: all
+	$(PYTHON) tools/test.py known_issues --expect-fail
+
 test-npm: $(NODE_EXE)
 	NODE=$(NODE) tools/test-npm.sh
 
@@ -272,6 +275,9 @@ else
 ifeq ($(DESTCPU),arm)
 ARCH=arm
 else
+ifeq ($(DESTCPU),aarch64)
+ARCH=arm64
+else
 ifeq ($(DESTCPU),ppc64)
 ARCH=ppc64
 else
@@ -279,6 +285,7 @@ ifeq ($(DESTCPU),ppc)
 ARCH=ppc
 else
 ARCH=x86
+endif
 endif
 endif
 endif
@@ -363,6 +370,7 @@ $(TARBALL): release-only $(NODE_EXE) doc
 	rm -rf $(TARNAME)/deps/uv/{docs,samples,test}
 	rm -rf $(TARNAME)/deps/openssl/{doc,demos,test}
 	rm -rf $(TARNAME)/deps/zlib/contrib # too big, unused
+	rm -rf $(TARNAME)/.github # github issue templates
 	find $(TARNAME)/ -type l | xargs rm # annoying on windows
 	tar -cf $(TARNAME).tar $(TARNAME)
 	rm -rf $(TARNAME)
@@ -509,8 +517,8 @@ bench-idle:
 	$(NODE) benchmark/idle_clients.js &
 
 jslint:
-	$(NODE) tools/eslint/bin/eslint.js src lib test tools/eslint-rules \
-		--rulesdir tools/eslint-rules --quiet
+	$(NODE) tools/eslint/bin/eslint.js benchmark lib src test tools/doc \
+	  tools/eslint-rules --rulesdir tools/eslint-rules
 
 CPPLINT_EXCLUDE ?=
 CPPLINT_EXCLUDE += src/node_lttng.cc

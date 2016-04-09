@@ -245,7 +245,7 @@ function expectBody(expected) {
 (function() {
   // 256 X-Filler headers
   var lots_of_headers = 'X-Filler: 42' + CRLF;
-  for (var i = 0; i < 8; ++i) lots_of_headers += lots_of_headers;
+  lots_of_headers = lots_of_headers.repeat(256);
 
   var request = Buffer(
       'GET /foo/bar/baz?quux=42#1337 HTTP/1.0' + CRLF +
@@ -260,7 +260,7 @@ function expectBody(expected) {
     assert.equal(versionMajor, 1);
     assert.equal(versionMinor, 0);
 
-    var headers = headers || parser.headers;
+    headers = headers || parser.headers;
 
     assert.equal(headers.length, 2 * 256); // 256 key/value pairs
     for (var i = 0; i < headers.length; i += 2) {

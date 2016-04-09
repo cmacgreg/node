@@ -19,6 +19,7 @@
 #include "CNNICHashWhitelist.inc"
 
 #include <errno.h>
+#include <limits.h>  // INT_MAX
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,6 +63,7 @@ static const int X509_NAME_FLAGS = ASN1_STRFLGS_ESC_CTRL
 namespace node {
 namespace crypto {
 
+using v8::AccessorSignature;
 using v8::Array;
 using v8::Boolean;
 using v8::Context;
@@ -156,7 +158,11 @@ template int SSLWrap<TLSWrap>::SelectNextProtoCallback(
     unsigned int inlen,
     void* arg);
 #endif
+
+#ifdef NODE__HAVE_TLSEXT_STATUS_CB
 template int SSLWrap<TLSWrap>::TLSExtStatusCallback(SSL* s, void* arg);
+#endif
+
 template void SSLWrap<TLSWrap>::DestroySSL();
 template int SSLWrap<TLSWrap>::SSLCertCallback(SSL* s, void* arg);
 template void SSLWrap<TLSWrap>::WaitForCertCb(CertCb cb, void* arg);
@@ -310,7 +316,8 @@ void SecureContext::Initialize(Environment* env, Local<Object> target) {
       nullptr,
       env->as_external(),
       DEFAULT,
-      static_cast<PropertyAttribute>(ReadOnly | DontDelete));
+      static_cast<PropertyAttribute>(ReadOnly | DontDelete),
+      AccessorSignature::New(env->isolate(), t));
 
   target->Set(FIXED_ONE_BYTE_STRING(env->isolate(), "SecureContext"),
               t->GetFunction());
@@ -403,29 +410,18 @@ void SecureContext::Init(const FunctionCallbackInfo<Value>& args) {
 // Takes a string or buffer and loads it into a BIO.
 // Caller responsible for BIO_free_all-ing the returned object.
 static BIO* LoadBIO(Environment* env, Local<Value> v) {
-  BIO* bio = NodeBIO::New();
-  if (!bio)
-    return nullptr;
-
   HandleScope scope(env->isolate());
-
-  int r = -1;
 
   if (v->IsString()) {
     const node::Utf8Value s(env->isolate(), v);
-    r = BIO_write(bio, *s, s.length());
-  } else if (Buffer::HasInstance(v)) {
-    char* buffer_data = Buffer::Data(v);
-    size_t buffer_length = Buffer::Length(v);
-    r = BIO_write(bio, buffer_data, buffer_length);
+    return NodeBIO::NewFixed(*s, s.length());
   }
 
-  if (r <= 0) {
-    BIO_free_all(bio);
-    return nullptr;
+  if (Buffer::HasInstance(v)) {
+    return NodeBIO::NewFixed(Buffer::Data(v), Buffer::Length(v));
   }
 
-  return bio;
+  return nullptr;
 }
 
 
@@ -528,10 +524,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
     // the CA certificates.
     int r;
 
-    if (ctx->extra_certs != nullptr) {
-      sk_X509_pop_free(ctx->extra_certs, X509_free);
-      ctx->extra_certs = nullptr;
-    }
+    SSL_CTX_clear_extra_chain_certs(ctx);
 
     for (int i = 0; i < sk_X509_num(extra_certs); i++) {
       X509* ca = sk_X509_value(extra_certs, i);
@@ -768,15 +761,12 @@ void SecureContext::AddRootCerts(const FunctionCallbackInfo<Value>& args) {
     root_cert_store = X509_STORE_new();
 
     for (size_t i = 0; i < ARRAY_SIZE(root_certs); i++) {
-      BIO* bp = NodeBIO::New();
-
-      if (!BIO_write(bp, root_certs[i], strlen(root_certs[i]))) {
-        BIO_free_all(bp);
+      BIO* bp = NodeBIO::NewFixed(root_certs[i], strlen(root_certs[i]));
+      if (bp == nullptr) {
         return;
       }
 
       X509 *x509 = PEM_read_bio_X509(bp, nullptr, CryptoPemCallback, nullptr);
-
       if (x509 == nullptr) {
         BIO_free_all(bp);
         return;
@@ -989,6 +979,17 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
                                     &sc->cert_,
                                     &sc->issuer_) &&
       SSL_CTX_use_PrivateKey(sc->ctx_, pkey)) {
+    // Add CA certs too
+    for (int i = 0; i < sk_X509_num(extra_certs); i++) {
+      X509* ca = sk_X509_value(extra_certs, i);
+
+      if (!sc->ca_store_) {
+        sc->ca_store_ = X509_STORE_new();
+        SSL_CTX_set_cert_store(sc->ctx_, sc->ca_store_);
+      }
+      X509_STORE_add_cert(sc->ca_store_, ca);
+      SSL_CTX_add_client_CA(sc->ctx_, ca);
+    }
     ret = true;
   }
 
@@ -997,7 +998,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
   if (cert != nullptr)
     X509_free(cert);
   if (extra_certs != nullptr)
-    sk_X509_free(extra_certs);
+    sk_X509_pop_free(extra_certs, X509_free);
 
   PKCS12_free(p12);
   BIO_free_all(in);
@@ -1147,9 +1148,7 @@ int SecureContext::TicketKeyCallback(SSL* ssl,
 
 void SecureContext::CtxGetter(Local<String> property,
                               const PropertyCallbackInfo<Value>& info) {
-  HandleScope scope(info.GetIsolate());
-
-  SSL_CTX* ctx = Unwrap<SecureContext>(info.Holder())->ctx_;
+  SSL_CTX* ctx = Unwrap<SecureContext>(info.This())->ctx_;
   Local<External> ext = External::New(info.GetIsolate(), ctx);
   info.GetReturnValue().Set(ext);
 }
@@ -1217,7 +1216,8 @@ void SSLWrap<Base>::AddMethods(Environment* env, Local<FunctionTemplate> t) {
       nullptr,
       env->as_external(),
       DEFAULT,
-      static_cast<PropertyAttribute>(ReadOnly | DontDelete));
+      static_cast<PropertyAttribute>(ReadOnly | DontDelete),
+      AccessorSignature::New(env->isolate(), t));
 }
 
 
@@ -2119,7 +2119,12 @@ int SSLWrap<Base>::SSLCertCallback(SSL* s, void* arg) {
     info->Set(env->tls_ticket_string(),
               Boolean::New(env->isolate(), sess->tlsext_ticklen != 0));
   }
-  bool ocsp = s->tlsext_status_type == TLSEXT_STATUSTYPE_ocsp;
+
+  bool ocsp = false;
+#ifdef NODE__HAVE_TLSEXT_STATUS_CB
+  ocsp = s->tlsext_status_type == TLSEXT_STATUSTYPE_ocsp;
+#endif
+
   info->Set(env->ocsp_request_string(), Boolean::New(env->isolate(), ocsp));
 
   Local<Value> argv[] = { info };
@@ -2199,10 +2204,8 @@ void SSLWrap<Base>::CertCbDone(const FunctionCallbackInfo<Value>& args) {
 
 template <class Base>
 void SSLWrap<Base>::SSLGetter(Local<String> property,
-                        const PropertyCallbackInfo<Value>& info) {
-  HandleScope scope(info.GetIsolate());
-
-  SSL* ssl = Unwrap<Base>(info.Holder())->ssl_;
+                              const PropertyCallbackInfo<Value>& info) {
+  SSL* ssl = Unwrap<Base>(info.This())->ssl_;
   Local<External> ext = External::New(info.GetIsolate(), ssl);
   info.GetReturnValue().Set(ext);
 }
@@ -4140,12 +4143,14 @@ void DiffieHellman::Initialize(Environment* env, Local<Object> target) {
   env->SetProtoMethod(t, "setPublicKey", SetPublicKey);
   env->SetProtoMethod(t, "setPrivateKey", SetPrivateKey);
 
-  t->InstanceTemplate()->SetAccessor(env->verify_error_string(),
-                                     DiffieHellman::VerifyErrorGetter,
-                                     nullptr,
-                                     env->as_external(),
-                                     DEFAULT,
-                                     attributes);
+  t->InstanceTemplate()->SetAccessor(
+      env->verify_error_string(),
+      DiffieHellman::VerifyErrorGetter,
+      nullptr,
+      env->as_external(),
+      DEFAULT,
+      attributes,
+      AccessorSignature::New(env->isolate(), t));
 
   target->Set(FIXED_ONE_BYTE_STRING(env->isolate(), "DiffieHellman"),
               t->GetFunction());
@@ -4160,12 +4165,14 @@ void DiffieHellman::Initialize(Environment* env, Local<Object> target) {
   env->SetProtoMethod(t2, "getPublicKey", GetPublicKey);
   env->SetProtoMethod(t2, "getPrivateKey", GetPrivateKey);
 
-  t2->InstanceTemplate()->SetAccessor(env->verify_error_string(),
-                                      DiffieHellman::VerifyErrorGetter,
-                                      nullptr,
-                                      env->as_external(),
-                                      DEFAULT,
-                                      attributes);
+  t2->InstanceTemplate()->SetAccessor(
+      env->verify_error_string(),
+      DiffieHellman::VerifyErrorGetter,
+      nullptr,
+      env->as_external(),
+      DEFAULT,
+      attributes,
+      AccessorSignature::New(env->isolate(), t2));
 
   target->Set(FIXED_ONE_BYTE_STRING(env->isolate(), "DiffieHellmanGroup"),
               t2->GetFunction());
@@ -4734,12 +4741,12 @@ class PBKDF2Request : public AsyncWrap {
   PBKDF2Request(Environment* env,
                 Local<Object> object,
                 const EVP_MD* digest,
-                ssize_t passlen,
+                int passlen,
                 char* pass,
-                ssize_t saltlen,
+                int saltlen,
                 char* salt,
-                ssize_t iter,
-                ssize_t keylen)
+                int iter,
+                int keylen)
       : AsyncWrap(env, object, AsyncWrap::PROVIDER_CRYPTO),
         digest_(digest),
         error_(0),
@@ -4768,7 +4775,7 @@ class PBKDF2Request : public AsyncWrap {
     return digest_;
   }
 
-  inline ssize_t passlen() const {
+  inline int passlen() const {
     return passlen_;
   }
 
@@ -4776,7 +4783,7 @@ class PBKDF2Request : public AsyncWrap {
     return pass_;
   }
 
-  inline ssize_t saltlen() const {
+  inline int saltlen() const {
     return saltlen_;
   }
 
@@ -4784,7 +4791,7 @@ class PBKDF2Request : public AsyncWrap {
     return salt_;
   }
 
-  inline ssize_t keylen() const {
+  inline int keylen() const {
     return keylen_;
   }
 
@@ -4792,7 +4799,7 @@ class PBKDF2Request : public AsyncWrap {
     return key_;
   }
 
-  inline ssize_t iter() const {
+  inline int iter() const {
     return iter_;
   }
 
@@ -4825,13 +4832,13 @@ class PBKDF2Request : public AsyncWrap {
  private:
   const EVP_MD* digest_;
   int error_;
-  ssize_t passlen_;
+  int passlen_;
   char* pass_;
-  ssize_t saltlen_;
+  int saltlen_;
   char* salt_;
-  ssize_t keylen_;
+  int keylen_;
   char* key_;
-  ssize_t iter_;
+  int iter_;
 };
 
 
@@ -4888,10 +4895,11 @@ void PBKDF2(const FunctionCallbackInfo<Value>& args) {
   const char* type_error = nullptr;
   char* pass = nullptr;
   char* salt = nullptr;
-  ssize_t passlen = -1;
-  ssize_t saltlen = -1;
-  double keylen = -1;
-  ssize_t iter = -1;
+  int passlen = -1;
+  int saltlen = -1;
+  double raw_keylen = -1;
+  int keylen = -1;
+  int iter = -1;
   PBKDF2Request* req = nullptr;
   Local<Object> obj;
 
@@ -4943,11 +4951,14 @@ void PBKDF2(const FunctionCallbackInfo<Value>& args) {
     goto err;
   }
 
-  keylen = args[3]->NumberValue();
-  if (keylen < 0 || isnan(keylen) || isinf(keylen)) {
+  raw_keylen = args[3]->NumberValue();
+  if (raw_keylen < 0.0 || isnan(raw_keylen) || isinf(raw_keylen) ||
+      raw_keylen > INT_MAX) {
     type_error = "Bad key length";
     goto err;
   }
+
+  keylen = static_cast<int>(raw_keylen);
 
   if (args[4]->IsString()) {
     node::Utf8Value digest_name(env->isolate(), args[4]);
@@ -4971,11 +4982,11 @@ void PBKDF2(const FunctionCallbackInfo<Value>& args) {
                           saltlen,
                           salt,
                           iter,
-                          static_cast<ssize_t>(keylen));
+                          keylen);
 
   if (args[5]->IsFunction()) {
     obj->Set(env->ondone_string(), args[5]);
-    // XXX(trevnorris): This will need to go with the rest of domains.
+
     if (env->in_domain())
       obj->Set(env->domain_string(), env->domain_array()->Get(0));
     uv_queue_work(env->event_loop(),
@@ -5136,7 +5147,7 @@ void RandomBytes(const FunctionCallbackInfo<Value>& args) {
 
   if (args[1]->IsFunction()) {
     obj->Set(FIXED_ONE_BYTE_STRING(args.GetIsolate(), "ondone"), args[1]);
-    // XXX(trevnorris): This will need to go with the rest of domains.
+
     if (env->in_domain())
       obj->Set(env->domain_string(), env->domain_array()->Get(0));
     uv_queue_work(env->event_loop(),
@@ -5177,7 +5188,7 @@ void GetSSLCiphers(const FunctionCallbackInfo<Value>& args) {
   STACK_OF(SSL_CIPHER)* ciphers = SSL_get_ciphers(ssl);
 
   for (int i = 0; i < sk_SSL_CIPHER_num(ciphers); ++i) {
-    SSL_CIPHER* cipher = sk_SSL_CIPHER_value(ciphers, i);
+    const SSL_CIPHER* cipher = sk_SSL_CIPHER_value(ciphers, i);
     arr->Set(i, OneByteString(args.GetIsolate(), SSL_CIPHER_get_name(cipher)));
   }
 

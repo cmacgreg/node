@@ -12,11 +12,13 @@ the same operating system behave should use [`dns.lookup()`][].__
 
 For example, looking up `nodejs.org`.
 
-    const dns = require('dns');
+```js
+const dns = require('dns');
 
-    dns.lookup('nodejs.org', (err, addresses, family) => {
-      console.log('addresses:', addresses);
-    });
+dns.lookup('nodejs.org', (err, addresses, family) => {
+  console.log('addresses:', addresses);
+});
+```
 
 2) Functions that connect to an actual DNS server to perform name resolution,
 and that _always_ use the network to perform DNS queries. This category
@@ -29,22 +31,24 @@ for name resolution, and instead want to _always_ perform DNS queries.
 Below is an example that resolves `'nodejs.org'` then reverse resolves the IP
 addresses that are returned.
 
-    const dns = require('dns');
+```js
+const dns = require('dns');
 
-    dns.resolve4('nodejs.org', (err, addresses) => {
-      if (err) throw err;
+dns.resolve4('nodejs.org', (err, addresses) => {
+  if (err) throw err;
 
-      console.log(`addresses: ${JSON.stringify(addresses)}`);
+  console.log(`addresses: ${JSON.stringify(addresses)}`);
 
-      addresses.forEach((a) => {
-        dns.reverse(a, (err, hostnames) => {
-          if (err) {
-            throw err;
-          }
-          console.log(`reverse for ${a}: ${JSON.stringify(hostnames)}`);
-        });
-      });
+  addresses.forEach((a) => {
+    dns.reverse(a, (err, hostnames) => {
+      if (err) {
+        throw err;
+      }
+      console.log(`reverse for ${a}: ${JSON.stringify(hostnames)}`);
     });
+  });
+});
+```
 
 There are subtle consequences in choosing one over the other, please consult
 the [Implementation considerations section][] for more information.
@@ -69,18 +73,20 @@ Alternatively, `options` can be an object containing these properties:
   `getaddrinfo` flags. If `hints` is not provided, then no flags are passed to
   `getaddrinfo`. Multiple flags can be passed through `hints` by logically
   `OR`ing their values.
-  See [supported `getaddrinfo` flags][] below for more information on supported
+  See [supported `getaddrinfo` flags][] for more information on supported
   flags.
 * `all`: {Boolean} - When `true`, the callback returns all resolved addresses
   in an array, otherwise returns a single address. Defaults to `false`.
 
 All properties are optional. An example usage of options is shown below.
 
-    {
-      family: 4,
-      hints: dns.ADDRCONFIG | dns.V4MAPPED,
-      all: false
-    }
+```
+{
+  family: 4,
+  hints: dns.ADDRCONFIG | dns.V4MAPPED,
+  all: false
+}
+```
 
 The `callback` function has arguments `(err, address, family)`. `address` is a
 string representation of an IPv4 or IPv6 address. `family` is either the
@@ -125,11 +131,13 @@ The callback has arguments `(err, hostname, service)`. The `hostname` and
 
 On error, `err` is an [`Error`][] object, where `err.code` is the error code.
 
-    const dns = require('dns');
-    dns.lookupService('127.0.0.1', 22, (err, hostname, service) => {
-      console.log(hostname, service);
-        // Prints: localhost ssh
-    });
+```js
+const dns = require('dns');
+dns.lookupService('127.0.0.1', 22, (err, hostname, service) => {
+  console.log(hostname, service);
+    // Prints: localhost ssh
+});
+```
 
 ## dns.resolve(hostname[, rrtype], callback)
 
@@ -151,10 +159,10 @@ Valid values for `rrtype` are:
 The `callback` function has arguments `(err, addresses)`. When successful,
 `addresses` will be an array. The type of each  item in `addresses` is
 determined by the record type, and described in the documentation for the
-corresponding lookup methods below.
+corresponding lookup methods.
 
 On error, `err` is an [`Error`][] object, where `err.code` is
-one of the error codes listed below.
+one of the error codes listed [here](#dns_error_codes).
 
 ## dns.resolve4(hostname, callback)
 
@@ -173,7 +181,7 @@ will contain an array of IPv6 addresses.
 
 Uses the DNS protocol to resolve `CNAME` records for the `hostname`. The
 `addresses` argument passed to the `callback` function
-will contain an of canonical name records available for the `hostname`
+will contain an array of canonical name records available for the `hostname`
 (e.g. `['bar.example.com']`).
 
 ## dns.resolveMx(hostname, callback)
@@ -204,15 +212,17 @@ be an object with the following properties:
 * `expire`
 * `minttl`
 
-    {
-      nsname: 'ns.example.com',
-      hostmaster: 'root.example.com',
-      serial: 2013101809,
-      refresh: 10000,
-      retry: 2400,
-      expire: 604800,
-      minttl: 3600
-    }
+```
+{
+  nsname: 'ns.example.com',
+  hostmaster: 'root.example.com',
+  serial: 2013101809,
+  refresh: 10000,
+  retry: 2400,
+  expire: 604800,
+  minttl: 3600
+}
+```
 
 ## dns.resolveSrv(hostname, callback)
 
@@ -225,12 +235,14 @@ be an array of objects with the following properties:
 * `port`
 * `name`
 
-    {
-      priority: 10,
-      weight: 5,
-      port: 21223,
-      name: 'service.example.com'
-    }
+```
+{
+  priority: 10,
+  weight: 5,
+  port: 21223,
+  name: 'service.example.com'
+}
+```
 
 ## dns.resolveTxt(hostname, callback)
 
@@ -250,7 +262,7 @@ The `callback` function has arguments `(err, hostnames)`, where `hostnames`
 is an array of resolved hostnames for the given `ip`.
 
 On error, `err` is an [`Error`][] object, where `err.code` is
-one of the error codes listed below.
+one of the [DNS error codes][].
 
 ## dns.setServers(servers)
 
@@ -335,6 +347,7 @@ processing that happens on libuv's threadpool that [`dns.lookup()`][] can have.
 They do not use the same set of configuration files than what [`dns.lookup()`][]
 uses. For instance, _they do not use the configuration from `/etc/hosts`_.
 
+[DNS error codes]: #dns_error_codes
 [`dns.lookup()`]: #dns_dns_lookup_hostname_options_callback
 [`dns.resolve()`]: #dns_dns_resolve_hostname_rrtype_callback
 [`dns.resolve4()`]: #dns_dns_resolve4_hostname_callback

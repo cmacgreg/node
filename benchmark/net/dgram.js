@@ -1,3 +1,4 @@
+'use strict';
 // test UDP send/recv throughput
 
 var common = require('../common.js');
@@ -18,7 +19,6 @@ var len;
 var num;
 var type;
 var chunk;
-var encoding;
 
 function main(conf) {
   dur = +conf.dur;

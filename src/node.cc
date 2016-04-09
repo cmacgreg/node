@@ -141,6 +141,7 @@ static const char** preload_modules = nullptr;
 static bool use_debug_agent = false;
 static bool debug_wait_connect = false;
 static int debug_port = 5858;
+static bool prof_process = false;
 static bool v8_is_profiling = false;
 static bool node_is_initialized = false;
 static node_module* modpending;
@@ -2972,6 +2973,11 @@ void SetupProcessObject(Environment* env,
     READONLY_PROPERTY(process, "throwDeprecation", True(env->isolate()));
   }
 
+  // --prof-process
+  if (prof_process) {
+    READONLY_PROPERTY(process, "profProcess", True(env->isolate()));
+  }
+
   // --trace-deprecation
   if (trace_deprecation) {
     READONLY_PROPERTY(process, "traceDeprecation", True(env->isolate()));
@@ -3199,6 +3205,8 @@ static bool ParseDebugOpt(const char* arg) {
 }
 
 static void PrintHelp() {
+  // XXX: If you add an option here, please also add it to doc/node.1 and
+  // doc/api/cli.markdown
   printf("Usage: node [options] [ -e script | script.js ] [arguments] \n"
          "       node debug script.js [arguments] \n"
          "\n"
@@ -3211,13 +3219,15 @@ static void PrintHelp() {
          "                        does not appear to be a terminal\n"
          "  -r, --require         module to preload (option can be repeated)\n"
          "  --no-deprecation      silence deprecation warnings\n"
+         "  --trace-deprecation   show stack traces on deprecations\n"
          "  --throw-deprecation   throw an exception anytime a deprecated "
          "function is used\n"
-         "  --trace-deprecation   show stack traces on deprecations\n"
          "  --trace-sync-io       show stack trace when use of sync IO\n"
          "                        is detected after the first tick\n"
          "  --track-heap-objects  track heap object allocations for heap "
          "snapshots\n"
+         "  --prof-process        process v8 profiler output generated\n"
+         "                        using --prof\n"
          "  --v8-options          print v8 command line options\n"
 #if HAVE_OPENSSL
          "  --tls-cipher-list=val use an alternative default TLS cipher list\n"
@@ -3289,7 +3299,8 @@ static void ParseArgs(int* argc,
   new_argv[0] = argv[0];
 
   unsigned int index = 1;
-  while (index < nargs && argv[index][0] == '-') {
+  bool short_circuit = false;
+  while (index < nargs && argv[index][0] == '-' && !short_circuit) {
     const char* const arg = argv[index];
     unsigned int args_consumed = 1;
 
@@ -3353,6 +3364,9 @@ static void ParseArgs(int* argc,
     } else if (strncmp(arg, "--security-revert=", 18) == 0) {
       const char* cve = arg + 18;
       Revert(cve);
+    } else if (strcmp(arg, "--prof-process") == 0) {
+      prof_process = true;
+      short_circuit = true;
     } else if (strcmp(arg, "--v8-options") == 0) {
       new_v8_argv[new_v8_argc] = "--help";
       new_v8_argc += 1;
