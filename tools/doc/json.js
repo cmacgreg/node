@@ -183,7 +183,7 @@ function processList(section) {
   list.forEach(function(tok) {
     var type = tok.type;
     if (type === 'space') return;
-    if (type === 'list_item_start') {
+    if (type === 'list_item_start' || type === 'loose_item_start') {
       var n = {};
       if (!current) {
         values.push(n);
@@ -260,6 +260,14 @@ function processList(section) {
       // event: each item is an argument.
       section.params = values;
       break;
+
+    default:
+      if (section.list.length > 0) {
+        section.desc = section.desc || [];
+        for (var i = 0; i < section.list.length; i++) {
+          section.desc.push(section.list[i]);
+        }
+      }
   }
 
   // section.listParsed = values;

@@ -70,7 +70,15 @@ documentation of the latest stable version.
 
 Stable, LTS and Nightly download directories all contain a *SHASUM256.txt*
 file that lists the SHA checksums for each file available for
-download. To check that a downloaded file matches the checksum, run
+download.
+
+The *SHASUM256.txt* can be downloaded using curl.
+
+```
+$ curl -O https://nodejs.org/dist/vx.y.z/SHASUMS256.txt
+```
+
+To check that a downloaded file matches the checksum, run
 it through `sha256sum` with a command such as:
 
 ```
@@ -114,8 +122,8 @@ Node.js from source.
 * [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
 * [CONTRIBUTING.md](./CONTRIBUTING.md)
 * [GOVERNANCE.md](./GOVERNANCE.md)
-* IRC (general questions): [#node.js on Freenode.net](http://webchat.freenode.net?channels=node.js&uio=d4)
-* IRC (node core development): [#node-dev on Freenode.net](http://webchat.freenode.net?channels=node-dev&uio=d4)
+* IRC (general questions): [#node.js on Freenode.net](https://webchat.freenode.net?channels=node.js&uio=d4)
+* IRC (node core development): [#node-dev on Freenode.net](https://webchat.freenode.net?channels=node-dev&uio=d4)
 * [nodejs/node on Gitter](https://gitter.im/nodejs/node)
 
 ## Security
