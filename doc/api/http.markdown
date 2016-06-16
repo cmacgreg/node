@@ -140,6 +140,13 @@ connection can be reused.  In the http agent, this returns
 CA, cert, ciphers, and other HTTPS/TLS-specific options that determine
 socket reusability.
 
+Options:
+
+- `host`: A domain name or IP address of the server to issue the request to.
+- `port`: Port of remote server.
+- `localAddress`: Local interface to bind for network connections when issuing
+  the request.
+
 ### agent.maxFreeSockets
 
 By default set to 256.  For Agents supporting HTTP KeepAlive, this
@@ -279,12 +286,6 @@ the client should send the request body.
 
 Emitted when a response is received to this request. This event is emitted only
 once. The `response` argument will be an instance of [`http.IncomingMessage`][].
-
-Options:
-
-- `host`: A domain name or IP address of the server to issue the request to.
-- `port`: Port of remote server.
-- `socketPath`: Unix Domain Socket (use one of host:port or socketPath)
 
 ### Event: 'socket'
 
@@ -587,8 +588,8 @@ connections.
 This object is created internally by a HTTP server--not by the user. It is
 passed as the second parameter to the `'request'` event.
 
-The response implements the [Writable Stream][] interface. This is an
-[`EventEmitter`][] with the following events:
+The response implements, but does not inherit from, the [Writable Stream][]
+interface. This is an [`EventEmitter`][] with the following events:
 
 ### Event: 'close'
 
