@@ -88,7 +88,7 @@ cctest: all
 	@out/$(BUILDTYPE)/$@
 
 test: | cctest  # Depends on 'all'.
-	$(PYTHON) tools/test.py --mode=release message parallel sequential -J
+	$(PYTHON) tools/test.py --mode=release doctool message parallel sequential -J
 	$(MAKE) jslint
 	$(MAKE) cpplint
 
@@ -145,7 +145,7 @@ test-all-valgrind: test-build
 
 test-ci: | build-addons
 	$(PYTHON) tools/test.py -p tap --logfile test.tap --mode=release --flaky-tests=$(FLAKY_TESTS) \
-		$(TEST_CI_ARGS) addons message parallel sequential
+		$(TEST_CI_ARGS) addons doctool message parallel sequential
 
 test-release: test-build
 	$(PYTHON) tools/test.py --mode=release
@@ -264,10 +264,39 @@ RELEASE=$(shell sed -ne 's/\#define NODE_VERSION_IS_RELEASE \([01]\)/\1/p' src/n
 PLATFORM=$(shell uname | tr '[:upper:]' '[:lower:]')
 NPMVERSION=v$(shell cat deps/npm/package.json | grep '"version"' | sed 's/^[^:]*: "\([^"]*\)",.*/\1/')
 
-ifeq ($(findstring x86_64,$(shell uname -m)),x86_64)
+UNAME_M=$(shell uname -m)
+ifeq ($(findstring x86_64,$(UNAME_M)),x86_64)
 DESTCPU ?= x64
 else
+ifeq ($(findstring ppc64,$(UNAME_M)),ppc64)
+DESTCPU ?= ppc64
+else
+ifeq ($(findstring ppc,$(UNAME_M)),ppc)
+DESTCPU ?= ppc
+else
+ifeq ($(findstring s390x,$(UNAME_M)),s390x)
+DESTCPU ?= s390x
+else
+ifeq ($(findstring s390,$(UNAME_M)),s390)
+DESTCPU ?= s390
+else
+ifeq ($(findstring arm,$(UNAME_M)),arm)
+DESTCPU ?= arm
+else
+ifeq ($(findstring aarch64,$(UNAME_M)),aarch64)
+DESTCPU ?= aarch64
+else
+ifeq ($(findstring powerpc,$(shell uname -p)),powerpc)
+DESTCPU ?= ppc64
+else
 DESTCPU ?= x86
+endif
+endif
+endif
+endif
+endif
+endif
+endif
 endif
 ifeq ($(DESTCPU),x64)
 ARCH=x64

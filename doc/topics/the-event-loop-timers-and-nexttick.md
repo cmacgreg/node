@@ -170,7 +170,7 @@ through  its queue of callbacks executing them synchronously until
 either the queue has  been exhausted, or the system-dependent hard limit
 is reached.
 
-* _If the `poll` queue is **empty**, one of two more things will
+* _If the `poll` queue **is empty**_, one of two more things will
 happen:
   * If scripts have been scheduled by `setImmediate()`, the event loop
   will end the `poll` phase and continue to the `check` phase to
@@ -218,15 +218,15 @@ ways depending on when they are called.
 * `setTimeout()` schedules a script to be run
 after a minimum threshold in ms has elapsed.
 
-The order in which they are execute varies depending on the context in
-which they are called.  If both are called in the main module then you
-are bound to how fast your process go, which is impacted by other
-programs running on your machine.
+The order in which the timers are executed will vary depending on the
+context in which they are called.  If both are called from within the
+main module, then timing will be bound by the performance of the process
+(which can be impacted by other applications running on the machine).
 
-For example, if we run the following script which is not within a I/O
-cycle (i.e. the main module), the order in which the two functions are
-executed is non-deterministic as it is based upon how fast your process
-goes (which is impacted by other programs running on your machine):
+For example, if we run the following script which is not within an I/O
+cycle (i.e. the main module), the order in which the two timers are
+executed is non-deterministic, as it is bound by the performance of the
+process:
 
 
 ```js

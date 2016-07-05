@@ -189,7 +189,7 @@ class Parser : public BaseObject {
     if (num_fields_ == num_values_) {
       // start of new field name
       num_fields_++;
-      if (num_fields_ == ARRAY_SIZE(fields_)) {
+      if (num_fields_ == arraysize(fields_)) {
         // ran out of space - flush to javascript land
         Flush();
         num_fields_ = 1;
@@ -198,7 +198,7 @@ class Parser : public BaseObject {
       fields_[num_fields_ - 1].Reset();
     }
 
-    CHECK_LT(num_fields_, static_cast<int>(ARRAY_SIZE(fields_)));
+    CHECK_LT(num_fields_, arraysize(fields_));
     CHECK_EQ(num_fields_, num_values_ + 1);
 
     fields_[num_fields_ - 1].Update(at, length);
@@ -214,7 +214,7 @@ class Parser : public BaseObject {
       values_[num_values_ - 1].Reset();
     }
 
-    CHECK_LT(num_values_, static_cast<int>(ARRAY_SIZE(values_)));
+    CHECK_LT(num_values_, arraysize(values_));
     CHECK_EQ(num_values_, num_fields_);
 
     values_[num_values_ - 1].Update(at, length);
@@ -248,7 +248,7 @@ class Parser : public BaseObject {
       return 0;
 
     Local<Value> undefined = Undefined(env()->isolate());
-    for (size_t i = 0; i < ARRAY_SIZE(argv); i++)
+    for (size_t i = 0; i < arraysize(argv); i++)
       argv[i] = undefined;
 
     if (have_flushed_) {
@@ -287,7 +287,7 @@ class Parser : public BaseObject {
     argv[A_UPGRADE] = Boolean::New(env()->isolate(), parser_.upgrade);
 
     Local<Value> head_response =
-        cb.As<Function>()->Call(obj, ARRAY_SIZE(argv), argv);
+        cb.As<Function>()->Call(obj, arraysize(argv), argv);
 
     if (head_response.IsEmpty()) {
       got_exception_ = true;
@@ -322,7 +322,7 @@ class Parser : public BaseObject {
       Integer::NewFromUnsigned(env()->isolate(), length)
     };
 
-    Local<Value> r = cb.As<Function>()->Call(obj, ARRAY_SIZE(argv), argv);
+    Local<Value> r = cb.As<Function>()->Call(obj, arraysize(argv), argv);
 
     if (r.IsEmpty()) {
       got_exception_ = true;
@@ -377,11 +377,11 @@ class Parser : public BaseObject {
     url_.Save();
     status_message_.Save();
 
-    for (int i = 0; i < num_fields_; i++) {
+    for (size_t i = 0; i < num_fields_; i++) {
       fields_[i].Save();
     }
 
-    for (int i = 0; i < num_values_; i++) {
+    for (size_t i = 0; i < num_values_; i++) {
       values_[i].Save();
     }
   }
@@ -631,11 +631,9 @@ class Parser : public BaseObject {
   }
 
   Local<Array> CreateHeaders() {
-    // num_values_ is either -1 or the entry # of the last header
-    // so num_values_ == 0 means there's a single header
     Local<Array> headers = Array::New(env()->isolate(), 2 * num_values_);
 
-    for (int i = 0; i < num_values_; ++i) {
+    for (size_t i = 0; i < num_values_; ++i) {
       headers->Set(2 * i, fields_[i].ToString(env()));
       headers->Set(2 * i + 1, values_[i].ToString(env()));
     }
@@ -659,7 +657,7 @@ class Parser : public BaseObject {
       url_.ToString(env())
     };
 
-    Local<Value> r = cb.As<Function>()->Call(obj, ARRAY_SIZE(argv), argv);
+    Local<Value> r = cb.As<Function>()->Call(obj, arraysize(argv), argv);
 
     if (r.IsEmpty())
       got_exception_ = true;
@@ -687,8 +685,8 @@ class Parser : public BaseObject {
   StringPtr values_[32];  // header values
   StringPtr url_;
   StringPtr status_message_;
-  int num_fields_;
-  int num_values_;
+  size_t num_fields_;
+  size_t num_values_;
   bool have_flushed_;
   bool got_exception_;
   Local<Object> current_buffer_;

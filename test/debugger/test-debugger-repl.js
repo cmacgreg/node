@@ -51,8 +51,18 @@ addTest('sb("setInterval()", "!(setInterval.flag++)")', [
 
 // Continue
 addTest('c', [
-  /break in node.js:\d+/,
+  /break in timers.js:\d+/,
   /\d/, /\d/, /\d/, /\d/, /\d/
+]);
+
+// Execute
+addTest('exec process.title', [
+  /node/
+]);
+
+// Execute
+addTest('exec exec process.title', [
+  /SyntaxError: Unexpected identifier/
 ]);
 
 // REPL and process.env regression
@@ -64,4 +74,8 @@ addTest('for (var i in process.env) delete process.env[i]', []);
 
 addTest('process.env', [
   /\{\}/
+]);
+
+addTest('arr = [{foo: "bar"}]', [
+  /\[ \{ foo: 'bar' \} \]/
 ]);
