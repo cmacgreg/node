@@ -2,8 +2,8 @@
 #define SRC_NODE_VERSION_H_
 
 #define NODE_MAJOR_VERSION 4
-#define NODE_MINOR_VERSION 4
-#define NODE_PATCH_VERSION 7
+#define NODE_MINOR_VERSION 5
+#define NODE_PATCH_VERSION 0
 
 #define NODE_VERSION_IS_LTS 1
 #define NODE_VERSION_LTS_CODENAME "Argon"
@@ -54,4 +54,4 @@
  */
 #define NODE_MODULE_VERSION 46 /* Node.js v4.0.0 */
 
-#endif  /* SRC_NODE_VERSION_H_ */
+#endif  // SRC_NODE_VERSION_H_

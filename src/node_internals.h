@@ -69,8 +69,6 @@ v8::Local<v8::Value> MakeCallback(Environment* env,
                                    int argc = 0,
                                    v8::Local<v8::Value>* argv = nullptr);
 
-bool KickNextTick();
-
 // Convert a struct sockaddr to a { address: '1.2.3.4', port: 1234 } JS object.
 // Sets address and port properties on the info object and returns it.
 // If |info| is omitted, a new object is returned.
@@ -128,9 +126,11 @@ constexpr size_t arraysize(const T(&)[N]) { return N; }
 # define NO_RETURN
 #endif
 
+enum ErrorHandlingMode { FATAL_ERROR, CONTEXTIFY_ERROR };
 void AppendExceptionLine(Environment* env,
                          v8::Local<v8::Value> er,
-                         v8::Local<v8::Message> message);
+                         v8::Local<v8::Message> message,
+                         enum ErrorHandlingMode mode = CONTEXTIFY_ERROR);
 
 NO_RETURN void FatalError(const char* location, const char* message);
 
@@ -239,81 +239,86 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
   Environment* env_;
 };
 
+// Clear any domain and/or uncaughtException handlers to force the error's
+// propagation and shutdown the process. Use this to force the process to exit
+// by clearing all callbacks that could handle the error.
+void ClearFatalExceptionHandlers(Environment* env);
+
 enum NodeInstanceType { MAIN, WORKER };
 
 class NodeInstanceData {
-  public:
-    NodeInstanceData(NodeInstanceType node_instance_type,
-                     uv_loop_t* event_loop,
-                     int argc,
-                     const char** argv,
-                     int exec_argc,
-                     const char** exec_argv,
-                     bool use_debug_agent_flag)
-        : node_instance_type_(node_instance_type),
-          exit_code_(1),
-          event_loop_(event_loop),
-          argc_(argc),
-          argv_(argv),
-          exec_argc_(exec_argc),
-          exec_argv_(exec_argv),
-          use_debug_agent_flag_(use_debug_agent_flag) {
-      CHECK_NE(event_loop_, nullptr);
-    }
+ public:
+  NodeInstanceData(NodeInstanceType node_instance_type,
+                   uv_loop_t* event_loop,
+                   int argc,
+                   const char** argv,
+                   int exec_argc,
+                   const char** exec_argv,
+                   bool use_debug_agent_flag)
+      : node_instance_type_(node_instance_type),
+        exit_code_(1),
+        event_loop_(event_loop),
+        argc_(argc),
+        argv_(argv),
+        exec_argc_(exec_argc),
+        exec_argv_(exec_argv),
+        use_debug_agent_flag_(use_debug_agent_flag) {
+    CHECK_NE(event_loop_, nullptr);
+  }
 
-    uv_loop_t* event_loop() const {
-      return event_loop_;
-    }
+  uv_loop_t* event_loop() const {
+    return event_loop_;
+  }
 
-    int exit_code() {
-      CHECK(is_main());
-      return exit_code_;
-    }
+  int exit_code() {
+    CHECK(is_main());
+    return exit_code_;
+  }
 
-    void set_exit_code(int exit_code) {
-      CHECK(is_main());
-      exit_code_ = exit_code;
-    }
+  void set_exit_code(int exit_code) {
+    CHECK(is_main());
+    exit_code_ = exit_code;
+  }
 
-    bool is_main() {
-      return node_instance_type_ == MAIN;
-    }
+  bool is_main() {
+    return node_instance_type_ == MAIN;
+  }
 
-    bool is_worker() {
-      return node_instance_type_ == WORKER;
-    }
+  bool is_worker() {
+    return node_instance_type_ == WORKER;
+  }
 
-    int argc() {
-      return argc_;
-    }
+  int argc() {
+    return argc_;
+  }
 
-    const char** argv() {
-      return argv_;
-    }
+  const char** argv() {
+    return argv_;
+  }
 
-    int exec_argc() {
-      return exec_argc_;
-    }
+  int exec_argc() {
+    return exec_argc_;
+  }
 
-    const char** exec_argv() {
-      return exec_argv_;
-    }
+  const char** exec_argv() {
+    return exec_argv_;
+  }
 
-    bool use_debug_agent() {
-      return is_main() && use_debug_agent_flag_;
-    }
+  bool use_debug_agent() {
+    return is_main() && use_debug_agent_flag_;
+  }
 
-  private:
-    const NodeInstanceType node_instance_type_;
-    int exit_code_;
-    uv_loop_t* const event_loop_;
-    const int argc_;
-    const char** argv_;
-    const int exec_argc_;
-    const char** exec_argv_;
-    const bool use_debug_agent_flag_;
+ private:
+  const NodeInstanceType node_instance_type_;
+  int exit_code_;
+  uv_loop_t* const event_loop_;
+  const int argc_;
+  const char** argv_;
+  const int exec_argc_;
+  const char** exec_argv_;
+  const bool use_debug_agent_flag_;
 
-    DISALLOW_COPY_AND_ASSIGN(NodeInstanceData);
+  DISALLOW_COPY_AND_ASSIGN(NodeInstanceData);
 };
 
 namespace Buffer {

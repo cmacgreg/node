@@ -3693,6 +3693,11 @@ Representation HUnaryMathOperation::RepresentationFromInputs() {
 
 bool HAllocate::HandleSideEffectDominator(GVNFlag side_effect,
                                           HValue* dominator) {
+  if (IsOldSpaceAllocation()) {
+    // Do not fold old space allocations because the store buffer might need
+    // to iterate old space pages during scavenges on overflow.
+    return false;
+  }
   DCHECK(side_effect == kNewSpacePromotion);
   Zone* zone = block()->zone();
   Isolate* isolate = block()->isolate();
@@ -3825,12 +3830,12 @@ bool HAllocate::HandleSideEffectDominator(GVNFlag side_effect,
     }
   }
 
-  bool keep_new_space_iterable = FLAG_log_gc || FLAG_heap_stats;
+  bool keep_heap_iterable = FLAG_log_gc || FLAG_heap_stats;
 #ifdef VERIFY_HEAP
-  keep_new_space_iterable = keep_new_space_iterable || FLAG_verify_heap;
+  keep_heap_iterable = keep_heap_iterable || FLAG_verify_heap;
 #endif
 
-  if (keep_new_space_iterable && dominator_allocate->IsNewSpaceAllocation()) {
+  if (keep_heap_iterable) {
     dominator_allocate->MakePrefillWithFiller();
   } else {
     // TODO(hpayer): This is a short-term hack to make allocation mementos

@@ -34,7 +34,7 @@ class FSEventWrap: public HandleWrap {
 
  private:
   FSEventWrap(Environment* env, Local<Object> object);
-  virtual ~FSEventWrap() override;
+  ~FSEventWrap() override;
 
   static void OnEvent(uv_fs_event_t* handle, const char* filename, int events,
     int status);
@@ -85,6 +85,7 @@ void FSEventWrap::Start(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
 
   FSEventWrap* wrap = Unwrap<FSEventWrap>(args.Holder());
+  CHECK_EQ(wrap->initialized_, false);
 
   if (args.Length() < 1 || !args[0]->IsString()) {
     return env->ThrowTypeError("filename must be a valid string");

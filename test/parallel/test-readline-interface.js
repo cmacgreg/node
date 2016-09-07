@@ -208,7 +208,9 @@ function isWarned(emitter) {
     assert.strictEqual(called, false);
     called = true;
   });
-  fi.emit('data', '\tfo\to\t');
+  for (var character of '\tfo\to\t') {
+    fi.emit('data', character);
+  }
   fi.emit('data', '\n');
   assert.ok(called);
   rli.close();
@@ -301,6 +303,11 @@ function isWarned(emitter) {
     assert.equal(cursorPos.cols, expectedLines.slice(-1)[0].length);
     rli.close();
   }
+
+  // isFullWidthCodePoint() should return false for non-numeric values
+  [true, false, null, undefined, {}, [], 'あ'].forEach((v) => {
+    assert.strictEqual(readline.isFullWidthCodePoint('あ'), false);
+  });
 
   // wide characters should be treated as two columns.
   assert.equal(readline.isFullWidthCodePoint('a'.charCodeAt(0)), false);

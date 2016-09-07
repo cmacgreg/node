@@ -24,10 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(_MSC_VER)
-#define strcasecmp _stricmp
-#endif
-
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L
 #define OPENSSL_CONST const
 #else
@@ -169,7 +165,7 @@ template void SSLWrap<TLSWrap>::WaitForCertCb(CertCb cb, void* arg);
 
 
 static void crypto_threadid_cb(CRYPTO_THREADID* tid) {
-  static_assert(sizeof(uv_thread_t) <= sizeof(void*),  // NOLINT(runtime/sizeof)
+  static_assert(sizeof(uv_thread_t) <= sizeof(void*),
                 "uv_thread_t does not fit in a pointer");
   CRYPTO_THREADID_set_pointer(tid, reinterpret_cast<void*>(uv_thread_self()));
 }
@@ -212,7 +208,7 @@ static int CryptoPemCallback(char *buf, int size, int rwflag, void *u) {
 
 
 void ThrowCryptoError(Environment* env,
-                      unsigned long err,
+                      unsigned long err,  // NOLINT(runtime/int)
                       const char* default_message = nullptr) {
   HandleScope scope(env->isolate());
   if (err != 0 || default_message == nullptr) {
@@ -471,7 +467,7 @@ void SecureContext::SetKey(const FunctionCallbackInfo<Value>& args) {
 
   if (!key) {
     BIO_free_all(bio);
-    unsigned long err = ERR_get_error();
+    unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
     if (!err) {
       return env->ThrowError("PEM_read_bio_PrivateKey");
     }
@@ -483,7 +479,7 @@ void SecureContext::SetKey(const FunctionCallbackInfo<Value>& args) {
   BIO_free_all(bio);
 
   if (!rv) {
-    unsigned long err = ERR_get_error();
+    unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
     if (!err)
       return env->ThrowError("SSL_CTX_use_PrivateKey");
     return ThrowCryptoError(env, err);
@@ -601,7 +597,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
 
   X509* extra = nullptr;
   int ret = 0;
-  unsigned long err = 0;
+  unsigned long err = 0;  // NOLINT(runtime/int)
 
   // Read extra certs
   STACK_OF(X509)* extra_certs = sk_X509_new_null();
@@ -676,7 +672,7 @@ void SecureContext::SetCert(const FunctionCallbackInfo<Value>& args) {
   BIO_free_all(bio);
 
   if (!rv) {
-    unsigned long err = ERR_get_error();
+    unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
     if (!err) {
       return env->ThrowError("SSL_CTX_use_certificate_chain");
     }
@@ -870,7 +866,9 @@ void SecureContext::SetOptions(const FunctionCallbackInfo<Value>& args) {
     return sc->env()->ThrowTypeError("Bad parameter");
   }
 
-  SSL_CTX_set_options(sc->ctx_, static_cast<long>(args[0]->IntegerValue()));
+  SSL_CTX_set_options(
+      sc->ctx_,
+      static_cast<long>(args[0]->IntegerValue()));  // NOLINT(runtime/int)
 }
 
 
@@ -1005,7 +1003,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
   delete[] pass;
 
   if (!ret) {
-    unsigned long err = ERR_get_error();
+    unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
     const char* str = ERR_reason_error_string(err);
     return env->ThrowError(str);
   }
@@ -1431,7 +1429,7 @@ static Local<Object> X509ToObject(Environment* env, X509* cert) {
                                     String::kNormalString, mem->length));
       (void) BIO_reset(bio);
 
-      unsigned long exponent_word = BN_get_word(rsa->e);
+      BN_ULONG exponent_word = BN_get_word(rsa->e);
       BIO_printf(bio, "0x%lx", exponent_word);
 
       BIO_get_mem_ptr(bio, &mem);
@@ -1838,7 +1836,8 @@ void SSLWrap<Base>::VerifyError(const FunctionCallbackInfo<Value>& args) {
   // XXX(bnoordhuis) The UNABLE_TO_GET_ISSUER_CERT error when there is no
   // peer certificate is questionable but it's compatible with what was
   // here before.
-  long x509_verify_error = X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT;
+  long x509_verify_error =  // NOLINT(runtime/int)
+      X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT;
   if (X509* peer_cert = SSL_get_peer_certificate(w->ssl_)) {
     X509_free(peer_cert);
     x509_verify_error = SSL_get_verify_result(w->ssl_);
@@ -2175,7 +2174,7 @@ void SSLWrap<Base>::CertCbDone(const FunctionCallbackInfo<Value>& args) {
     if (rv)
       rv = w->SetCACerts(sc);
     if (!rv) {
-      unsigned long err = ERR_get_error();
+      unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
       if (!err)
         return env->ThrowError("CertCbDone");
       return ThrowCryptoError(env, err);
@@ -2609,7 +2608,7 @@ void Connection::New(const FunctionCallbackInfo<Value>& args) {
   SSL_set_bio(conn->ssl_, conn->bio_read_, conn->bio_write_);
 
 #ifdef SSL_MODE_RELEASE_BUFFERS
-  long mode = SSL_get_mode(conn->ssl_);
+  long mode = SSL_get_mode(conn->ssl_);  // NOLINT(runtime/int)
   SSL_set_mode(conn->ssl_, mode | SSL_MODE_RELEASE_BUFFERS);
 #endif
 
@@ -3029,12 +3028,24 @@ void CipherBase::InitIv(const char* cipher_type,
   /* OpenSSL versions up to 0.9.8l failed to return the correct
      iv_length (0) for ECB ciphers */
   if (EVP_CIPHER_iv_length(cipher_) != iv_len &&
-      !(EVP_CIPHER_mode(cipher_) == EVP_CIPH_ECB_MODE && iv_len == 0)) {
+      !(EVP_CIPHER_mode(cipher_) == EVP_CIPH_ECB_MODE && iv_len == 0) &&
+      !(EVP_CIPHER_mode(cipher_) == EVP_CIPH_GCM_MODE) && iv_len > 0) {
     return env()->ThrowError("Invalid IV length");
   }
+
   EVP_CIPHER_CTX_init(&ctx_);
   const bool encrypt = (kind_ == kCipher);
   EVP_CipherInit_ex(&ctx_, cipher_, nullptr, nullptr, nullptr, encrypt);
+
+  /* Set IV length. Only required if GCM cipher and IV is not default iv. */
+  if (EVP_CIPHER_mode(cipher_) == EVP_CIPH_GCM_MODE &&
+      iv_len != EVP_CIPHER_iv_length(cipher_)) {
+    if (!EVP_CIPHER_CTX_ctrl(&ctx_, EVP_CTRL_GCM_SET_IVLEN, iv_len, nullptr)) {
+      EVP_CIPHER_CTX_cleanup(&ctx_);
+      return env()->ThrowError("Invalid IV length");
+    }
+  }
+
   if (!EVP_CIPHER_CTX_set_key_length(&ctx_, key_len)) {
     EVP_CIPHER_CTX_cleanup(&ctx_);
     return env()->ThrowError("Invalid key length");
@@ -3324,19 +3335,16 @@ void Hmac::New(const FunctionCallbackInfo<Value>& args) {
 void Hmac::HmacInit(const char* hash_type, const char* key, int key_len) {
   HandleScope scope(env()->isolate());
 
-  CHECK_EQ(md_, nullptr);
-  md_ = EVP_get_digestbyname(hash_type);
-  if (md_ == nullptr) {
+  CHECK_EQ(initialised_, false);
+  const EVP_MD* md = EVP_get_digestbyname(hash_type);
+  if (md == nullptr) {
     return env()->ThrowError("Unknown message digest");
   }
   HMAC_CTX_init(&ctx_);
-  int result = 0;
   if (key_len == 0) {
-    result = HMAC_Init(&ctx_, "", 0, md_);
-  } else {
-    result = HMAC_Init(&ctx_, key, key_len, md_);
+    key = "";
   }
-  if (!result) {
+  if (!HMAC_Init_ex(&ctx_, key, key_len, md, nullptr)) {
     return ThrowCryptoError(env(), ERR_get_error());
   }
   initialised_ = true;
@@ -3465,12 +3473,12 @@ void Hash::New(const FunctionCallbackInfo<Value>& args) {
 
 
 bool Hash::HashInit(const char* hash_type) {
-  CHECK_EQ(md_, nullptr);
-  md_ = EVP_get_digestbyname(hash_type);
-  if (md_ == nullptr)
+  CHECK_EQ(initialised_, false);
+  const EVP_MD* md = EVP_get_digestbyname(hash_type);
+  if (md == nullptr)
     return false;
   EVP_MD_CTX_init(&mdctx_);
-  if (EVP_DigestInit_ex(&mdctx_, md_, nullptr) <= 0) {
+  if (EVP_DigestInit_ex(&mdctx_, md, nullptr) <= 0) {
     return false;
   }
   initialised_ = true;
@@ -3558,7 +3566,7 @@ void SignBase::CheckThrow(SignBase::Error error) {
     case kSignPrivateKey:
     case kSignPublicKey:
       {
-        unsigned long err = ERR_get_error();
+        unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
         if (err)
           return ThrowCryptoError(env(), err);
         switch (error) {
@@ -3603,13 +3611,13 @@ void Sign::New(const FunctionCallbackInfo<Value>& args) {
 
 
 SignBase::Error Sign::SignInit(const char* sign_type) {
-  CHECK_EQ(md_, nullptr);
-  md_ = EVP_get_digestbyname(sign_type);
-  if (!md_)
+  CHECK_EQ(initialised_, false);
+  const EVP_MD* md = EVP_get_digestbyname(sign_type);
+  if (md == nullptr)
     return kSignUnknownDigest;
 
   EVP_MD_CTX_init(&mdctx_);
-  if (!EVP_SignInit_ex(&mdctx_, md_, nullptr))
+  if (!EVP_SignInit_ex(&mdctx_, md, nullptr))
     return kSignInit;
   initialised_ = true;
 
@@ -3803,13 +3811,13 @@ void Verify::New(const FunctionCallbackInfo<Value>& args) {
 
 
 SignBase::Error Verify::VerifyInit(const char* verify_type) {
-  CHECK_EQ(md_, nullptr);
-  md_ = EVP_get_digestbyname(verify_type);
-  if (md_ == nullptr)
+  CHECK_EQ(initialised_, false);
+  const EVP_MD* md = EVP_get_digestbyname(verify_type);
+  if (md == nullptr)
     return kSignUnknownDigest;
 
   EVP_MD_CTX_init(&mdctx_);
-  if (!EVP_VerifyInit_ex(&mdctx_, md_, nullptr))
+  if (!EVP_VerifyInit_ex(&mdctx_, md, nullptr))
     return kSignInit;
   initialised_ = true;
 
@@ -4232,7 +4240,7 @@ void DiffieHellman::DiffieHellmanGroup(
   for (size_t i = 0; i < arraysize(modp_groups); ++i) {
     const modp_group* it = modp_groups + i;
 
-    if (strcasecmp(*group_name, it->name) != 0)
+    if (!StringEqualNoCase(*group_name, it->name))
       continue;
 
     initialized = diffieHellman->Init(it->prime,
@@ -5056,11 +5064,11 @@ class RandomBytesRequest : public AsyncWrap {
     size_ = 0;
   }
 
-  inline unsigned long error() const {
+  inline unsigned long error() const {  // NOLINT(runtime/int)
     return error_;
   }
 
-  inline void set_error(unsigned long err) {
+  inline void set_error(unsigned long err) {  // NOLINT(runtime/int)
     error_ = err;
   }
 
@@ -5069,7 +5077,7 @@ class RandomBytesRequest : public AsyncWrap {
   uv_work_t work_req_;
 
  private:
-  unsigned long error_;
+  unsigned long error_;  // NOLINT(runtime/int)
   size_t size_;
   char* data_;
 };
@@ -5087,9 +5095,9 @@ void RandomBytesWork(uv_work_t* work_req) {
 
   // RAND_bytes() returns 0 on error.
   if (r == 0) {
-    req->set_error(ERR_get_error());
+    req->set_error(ERR_get_error());  // NOLINT(runtime/int)
   } else if (r == -1) {
-    req->set_error(static_cast<unsigned long>(-1));
+    req->set_error(static_cast<unsigned long>(-1));  // NOLINT(runtime/int)
   }
 }
 
@@ -5099,7 +5107,7 @@ void RandomBytesCheck(RandomBytesRequest* req, Local<Value> argv[2]) {
   if (req->error()) {
     char errmsg[256] = "Operation not supported";
 
-    if (req->error() != static_cast<unsigned long>(-1))
+    if (req->error() != static_cast<unsigned long>(-1))  // NOLINT(runtime/int)
       ERR_error_string_n(req->error(), errmsg, sizeof errmsg);
 
     argv[0] = Exception::Error(OneByteString(req->env()->isolate(), errmsg));

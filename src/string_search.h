@@ -53,7 +53,7 @@ class Vector {
 
   // Access individual vector elements - checks bounds in debug mode.
   T& operator[](size_t index) const {
-    ASSERT(0 <= index && index < length_);
+    ASSERT(index < length_);
     return start_[index];
   }
 
@@ -171,7 +171,7 @@ class StringSearch : private StringSearchBase {
   }
 
  private:
-  typedef size_t (*SearchFunction)(  // NOLINT - it's not a cast!
+  typedef size_t (*SearchFunction)(
       StringSearch<PatternChar, SubjectChar>*,
       Vector<const SubjectChar>,
       size_t);
@@ -416,7 +416,7 @@ size_t StringSearch<PatternChar, SubjectChar>::BoyerMooreSearch(
         return subject.length();
       }
     }
-    while (j >= 0 && pattern[j] == (c = subject[index + j])) {
+    while (pattern[j] == (c = subject[index + j])) {
       if (j == 0) {
         return index;
       }
@@ -544,7 +544,7 @@ size_t StringSearch<PatternChar, SubjectChar>::BoyerMooreHorspoolSearch(
       }
     }
     j--;
-    while (j >= 0 && pattern[j] == (subject[index + j])) {
+    while (pattern[j] == (subject[index + j])) {
       if (j == 0) {
         return index;
       }
@@ -650,8 +650,8 @@ size_t SearchString(Vector<const SubjectChar> subject,
   StringSearch<PatternChar, SubjectChar> search(pattern);
   return search.Search(subject, start_index);
 }
-}
-}  // namespace node::stringsearch
+}  // namespace stringsearch
+}  // namespace node
 
 namespace node {
 using node::stringsearch::Vector;

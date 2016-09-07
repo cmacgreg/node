@@ -3,8 +3,8 @@
 #include "node_http_parser.h"
 #include "node_revert.h"
 
-#include "base-object.h"
-#include "base-object-inl.h"
+#include "async-wrap.h"
+#include "async-wrap-inl.h"
 #include "env.h"
 #include "env-inl.h"
 #include "stream_base.h"
@@ -15,12 +15,6 @@
 
 #include <stdlib.h>  // free()
 #include <string.h>  // strdup()
-
-#if defined(_MSC_VER)
-#define strcasecmp _stricmp
-#else
-#include <strings.h>  // strcasecmp()
-#endif
 
 // This is a binding to http_parser (https://github.com/joyent/http-parser)
 // The goal is to decouple sockets from parsing for more javascript-level
@@ -114,9 +108,9 @@ struct StringPtr {
 
 
   void Update(const char* str, size_t size) {
-    if (str_ == nullptr)
+    if (str_ == nullptr) {
       str_ = str;
-    else if (on_heap_ || str_ + size_ != str) {
+    } else if (on_heap_ || str_ + size_ != str) {
       // Non-consecutive input, make a copy on the heap.
       // TODO(bnoordhuis) Use slab allocation, O(n) allocs is bad.
       char* s = new char[size_ + size];
@@ -148,10 +142,10 @@ struct StringPtr {
 };
 
 
-class Parser : public BaseObject {
+class Parser : public AsyncWrap {
  public:
   Parser(Environment* env, Local<Object> wrap, enum http_parser_type type)
-      : BaseObject(env, wrap),
+      : AsyncWrap(env, wrap, AsyncWrap::PROVIDER_HTTPPARSER),
         current_buffer_len_(0),
         current_buffer_data_(nullptr) {
     Wrap(object(), this);
@@ -162,6 +156,11 @@ class Parser : public BaseObject {
   ~Parser() override {
     ClearWrap(object());
     persistent().Reset();
+  }
+
+
+  size_t self_size() const override {
+    return sizeof(*this);
   }
 
 
@@ -286,15 +285,17 @@ class Parser : public BaseObject {
 
     argv[A_UPGRADE] = Boolean::New(env()->isolate(), parser_.upgrade);
 
+    Environment::AsyncCallbackScope callback_scope(env());
+
     Local<Value> head_response =
-        cb.As<Function>()->Call(obj, arraysize(argv), argv);
+        MakeCallback(cb.As<Function>(), arraysize(argv), argv);
 
     if (head_response.IsEmpty()) {
       got_exception_ = true;
       return -1;
     }
 
-    return head_response->IsTrue() ? 1 : 0;
+    return head_response->IntegerValue();
   }
 
 
@@ -322,7 +323,7 @@ class Parser : public BaseObject {
       Integer::NewFromUnsigned(env()->isolate(), length)
     };
 
-    Local<Value> r = cb.As<Function>()->Call(obj, arraysize(argv), argv);
+    Local<Value> r = MakeCallback(cb.As<Function>(), arraysize(argv), argv);
 
     if (r.IsEmpty()) {
       got_exception_ = true;
@@ -345,7 +346,9 @@ class Parser : public BaseObject {
     if (!cb->IsFunction())
       return 0;
 
-    Local<Value> r = cb.As<Function>()->Call(obj, 0, nullptr);
+    Environment::AsyncCallbackScope callback_scope(env());
+
+    Local<Value> r = MakeCallback(cb.As<Function>(), 0, nullptr);
 
     if (r.IsEmpty()) {
       got_exception_ = true;
@@ -583,12 +586,10 @@ class Parser : public BaseObject {
     parser->current_buffer_len_ = nread;
     parser->current_buffer_data_ = buf->base;
 
-    cb.As<Function>()->Call(obj, 1, &ret);
+    parser->MakeCallback(cb.As<Function>(), 1, &ret);
 
     parser->current_buffer_len_ = 0;
     parser->current_buffer_data_ = nullptr;
-
-    parser->env()->KickNextTick();
   }
 
 
@@ -657,7 +658,7 @@ class Parser : public BaseObject {
       url_.ToString(env())
     };
 
-    Local<Value> r = cb.As<Function>()->Call(obj, arraysize(argv), argv);
+    Local<Value> r = MakeCallback(cb.As<Function>(), arraysize(argv), argv);
 
     if (r.IsEmpty())
       got_exception_ = true;

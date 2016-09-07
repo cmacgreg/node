@@ -12,6 +12,7 @@
     'node_use_openssl%': 'true',
     'node_shared_openssl%': 'false',
     'node_v8_options%': '',
+    'node_enable_v8_vtunejit%': 'false',
     'node_target_type%': 'executable',
     'node_core_target_name%': 'node',
     'library_files': [
@@ -123,6 +124,7 @@
         'src/js_stream.cc',
         'src/node.cc',
         'src/node_buffer.cc',
+        'src/node_config.cc',
         'src/node_constants.cc',
         'src/node_contextify.cc',
         'src/node_file.cc',
@@ -234,6 +236,13 @@
             [ 'icu_small=="true"', {
               'defines': [ 'NODE_HAVE_SMALL_ICU=1' ],
           }]],
+        }],
+        [ 'node_enable_v8_vtunejit=="true" and (target_arch=="x64" or \
+           target_arch=="ia32" or target_arch=="x32")', {
+          'defines': [ 'NODE_ENABLE_VTUNE_PROFILING' ],
+          'dependencies': [
+            'deps/v8/src/third_party/vtune/v8vtune.gyp:v8_vtune'
+          ],
         }],
         [ 'node_use_openssl=="true"', {
           'defines': [ 'HAVE_OPENSSL=1' ],
