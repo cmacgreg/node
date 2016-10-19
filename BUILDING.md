@@ -1,4 +1,4 @@
-## Building Node.js
+# Building Node.js
 
 Depending on what platform or features you require, the build process may
 differ slightly. After you've successfully built a binary, running the
@@ -34,14 +34,7 @@ $ ./configure
 $ make
 ```
 
-If your Python binary is in a non-standard location or has a
-non-standard name, run the following instead:
-
-```console
-$ export PYTHON=/path/to/python
-$ $PYTHON ./configure
-$ make
-```
+Note that the above requires that `python` resolve to Python 2.6 or 2.7 and not a newer version.
 
 To run the tests:
 
@@ -105,13 +98,13 @@ Prerequisites:
   and tools which can be included in the global `PATH`.
 
 ```console
-> vcbuild nosign
+> .\vcbuild nosign
 ```
 
 To run the tests:
 
 ```console
-> vcbuild test
+> .\vcbuild test
 ```
 
 To test if Node.js was built correctly:
@@ -169,7 +162,7 @@ $ ./configure --with-intl=full-icu --download=all
 ##### Windows:
 
 ```console
-> vcbuild full-icu download-all
+> .\vcbuild full-icu download-all
 ```
 
 #### Building without Intl support
@@ -186,7 +179,7 @@ $ ./configure --without-intl
 ##### Windows:
 
 ```console
-> vcbuild without-intl
+> .\vcbuild without-intl
 ```
 
 #### Use existing installed ICU (Unix / OS X only):
@@ -229,7 +222,7 @@ First unpack latest ICU to `deps/icu`
 as `deps/icu` (You'll have: `deps/icu/source/...`)
 
 ```console
-> vcbuild full-icu
+> .\vcbuild full-icu
 ```
 
 ## Building Node.js with FIPS-compliant OpenSSL

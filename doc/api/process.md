@@ -478,7 +478,7 @@ process.argv.forEach((val, index) => {
 
 Launching the Node.js process as:
 
-```sh
+```console
 $ node process-2.js one two=three four
 ```
 
@@ -500,7 +500,7 @@ added: 6.4.0
 The `process.argv0` property stores a read-only copy of the original value of
 `argv[0]` passed when Node.js starts.
 
-```js
+```console
 $ bash -c 'exec -a customArgv0 ./node'
 > process.argv[0]
 '/Volumes/code/external/node/out/Release/node'
@@ -672,7 +672,7 @@ It is possible to modify this object, but such modifications will not be
 reflected outside the Node.js process. In other words, the following example
 would not work:
 
-```sh
+```console
 $ node -e 'process.env.foo = "bar"' && echo $foo
 ```
 
@@ -811,7 +811,7 @@ the same execution environment as the parent.
 
 For example:
 
-```sh
+```console
 $ node --harmony script.js --version
 ```
 
@@ -1143,14 +1143,13 @@ Will generate:
 
 `heapTotal` and `heapUsed` refer to V8's memory usage.
 
-## process.nextTick(callback[, arg][, ...])
+## process.nextTick(callback[, ...args])
 <!-- YAML
 added: v0.1.26
 -->
 
 * `callback` {Function}
-* `[, arg][, ...]` {any} Additional arguments to pass when invoking the
-  `callback`
+* `...args` {any} Additional arguments to pass when invoking the `callback`
 
 The `process.nextTick()` method adds the `callback` to the "next tick queue".
 Once the current turn of the event loop turn runs to completion, all callbacks
@@ -1272,6 +1271,12 @@ tarball.
 
 * `name` {String} A value that will always be `'node'` for Node.js. For
   legacy io.js releases, this will be `'io.js'`.
+* `lts`: a string with a value indicating the _codename_ of the LTS (Long-term
+  Support) line the current release is part of. This property only exists for
+  LTS releases and is `undefined` for all other release types, including stable
+  releases. Current valid values are:
+  - `"Argon"` for the v4.x LTS line beginning with v4.2.0.
+  - `"Boron"` for the v6.x LTS line beginning with v6.9.0.
 * `sourceUrl` {String} an absolute URL pointing to a `_.tar.gz_` file containing
   the source code of the current release.
 * `headersUrl`{String} an absolute URL pointing to a `_.tar.gz_` file containing
@@ -1462,7 +1467,7 @@ in several ways:
 3. Writes _can_ block when output is redirected to a file.
   - Note that disks are fast and operating systems normally employ write-back
     caching so this is very uncommon.
-4. Writes on UNIX __will__ block by default if output is going to a TTY
+4. Writes on UNIX **will** block by default if output is going to a TTY
    (a terminal).
 5. Windows functionality differs. Writes block except when output is going to a
    TTY.
@@ -1520,7 +1525,7 @@ in several ways:
 3. Writes _can_ block when output is redirected to a file.
   - Note that disks are fast and operating systems normally employ write-back
     caching so this is very uncommon.
-4. Writes on UNIX __will__ block by default if output is going to a TTY
+4. Writes on UNIX **will** block by default if output is going to a TTY
    (a terminal).
 5. Windows functionality differs. Writes block except when output is going to a
    TTY.
@@ -1538,7 +1543,7 @@ To check if Node.js is being run in a [TTY][] context, check the `isTTY`
 property on `process.stderr`, `process.stdout`, or `process.stdin`.
 
 For instance:
-```sh
+```console
 $ node -p "Boolean(process.stdin.isTTY)"
 true
 $ echo "foo" | node -p "Boolean(process.stdin.isTTY)"
@@ -1705,7 +1710,7 @@ cases:
 [`process.execPath`]: #process_process_execpath
 [`promise.catch()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch
 [`require.main`]: modules.html#modules_accessing_the_main_module
-[`setTimeout(fn, 0)`]: timers.html#timers_settimeout_callback_delay_arg
+[`setTimeout(fn, 0)`]: timers.html#timers_settimeout_callback_delay_args
 [process_emit_warning]: #process_process_emitwarning_warning_name_ctor
 [process_warning]: #process_event_warning
 [Signal Events]: #process_signal_events

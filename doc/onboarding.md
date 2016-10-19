@@ -3,6 +3,14 @@
 This document is an outline of the things we tell new Collaborators at their
 onboarding session.
 
+## One week before the onboarding session
+
+* Ask the new Collaborator if they are using two-factor authentication on their
+  GitHub account. If they are not, suggest that they enable it as their account
+  will have elevated privileges in many of the Node.js repositories.
+
+## Fifteen minutes before the onboarding session
+
 * Prior to the onboarding session, add the new Collaborators to
 [the Collaborators team](https://github.com/orgs/nodejs/teams/collaborators).
 
@@ -165,15 +173,13 @@ Update your `master` branch (or whichever branch you are landing on, almost alwa
 
 Landing a PR
 
-* if it all looks good, `curl -L 'url-of-pr.patch' | git am`
+* If it all looks good, `curl -L 'url-of-pr.patch' | git am`
   * If `git am` fails, see [the relevant section of the Onboarding Extras doc](./onboarding-extras.md#if-git-am-fails).
 * `git rebase -i upstream/master`
-* squash into logical commits if necessary
+* Squash into logical commits if necessary.
 * `./configure && make -j8 test` (`-j8` builds node in parallel with 8 threads. adjust to the number of cores (or processor-level threads) your processor has (or slightly more) for best results.)
 * Amend the commit description.
-  * Commits should be of the form `subsystem[,subsystem]: small description\n\nbig description\n\n<metadata>`
-  * The first line should not exceed 50 characters.
-  * The remaining lines (except for metadata lines) should wrap at 72 characters.
+  * The commit message text must conform to the [commit message guidelines](../CONTRIBUTING.md#step-3-commit).
   * Add required metadata:
     * `PR-URL: <full-pr-url>`
     * `Reviewed-By: <collaborator name> <collaborator email>`
@@ -186,18 +192,20 @@ Landing a PR
       * This will automatically close the PR when the commit lands in master.
     * `Refs: <full-url>`
       * Full URL of material that might provide additional useful information or context to someone trying to understand the change set or the thinking behind it.
+* Optional: Force push the amended commit to the branch you used to open the pull request. If your branch is called `bugfix`, then the command would be `git push --force-with-lease origin master:bugfix`. When the pull request is closed, this will cause the pull request to show the purple merged status rather than the red closed status that is usually used for pull requests that weren't merged. Only do this when landing your own contributions.
 * `git push upstream master`
     * Close the pull request with a "Landed in `<commit hash>`" comment.
 
 
-## exercise: make PRs adding yourselves to the README
+## Exercise: Make a PR adding yourself to the README
 
   * Example: https://github.com/nodejs/node/commit/7b09aade8468e1c930f36b9c81e6ac2ed5bc8732
-    * to see full URL: `git log 7b09aade8468e1c930f36b9c81e6ac2ed5bc8732 -1`
-  * Collaborators in alphabetical order by username
-  * Label your pull request with the `doc` subsystem label
-  * If you would like to run CI on your PR, feel free to
-  * Make sure to added the `PR-URL: <full-pr-url>`!
+    * For raw commit message: `git log 7b09aade8468e1c930f36b9c81e6ac2ed5bc8732 -1`
+  * Collaborators are in alphabetical order by GitHub username.
+  * Label your pull request with the `doc` subsystem label.
+  * Run CI on your PR.
+  * After a `LGTM` or two, land the PR.
+    * Be sure to add the `PR-URL: <full-pr-url>` and appropriate `Reviewed-By:` metadata!
 
 
 ## final notes

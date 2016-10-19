@@ -20,6 +20,7 @@ set noprojgen=
 set nobuild=
 set nosign=
 set nosnapshot=
+set cctest_args=
 set test_args=
 set package=
 set msi=
@@ -47,7 +48,6 @@ if /i "%1"=="clean"         set target=Clean&goto arg-ok
 if /i "%1"=="ia32"          set target_arch=x86&goto arg-ok
 if /i "%1"=="x86"           set target_arch=x86&goto arg-ok
 if /i "%1"=="x64"           set target_arch=x64&goto arg-ok
-if /i "%1"=="vc2013"        set target_env=vc2013&goto arg-ok
 if /i "%1"=="vc2015"        set target_env=vc2015&goto arg-ok
 if /i "%1"=="noprojgen"     set noprojgen=1&goto arg-ok
 if /i "%1"=="nobuild"       set nobuild=1&goto arg-ok
@@ -57,14 +57,15 @@ if /i "%1"=="noetw"         set noetw=1&goto arg-ok
 if /i "%1"=="noperfctr"     set noperfctr=1&goto arg-ok
 if /i "%1"=="licensertf"    set licensertf=1&goto arg-ok
 if /i "%1"=="test"          set test_args=%test_args% addons doctool known_issues message parallel sequential -J&set jslint=1&set build_addons=1&goto arg-ok
-if /i "%1"=="test-ci"       set test_args=%test_args% %test_ci_args% -p tap --logfile test.tap addons doctool known_issues message sequential parallel&set build_addons=1&goto arg-ok
+if /i "%1"=="test-ci"       set test_args=%test_args% %test_ci_args% -p tap --logfile test.tap addons doctool inspector known_issues message sequential parallel&set cctest_args=%cctest_args% --gtest_output=tap:cctest.tap&set build_addons=1&goto arg-ok
 if /i "%1"=="test-addons"   set test_args=%test_args% addons&set build_addons=1&goto arg-ok
 if /i "%1"=="test-simple"   set test_args=%test_args% sequential parallel -J&goto arg-ok
 if /i "%1"=="test-message"  set test_args=%test_args% message&goto arg-ok
 if /i "%1"=="test-gc"       set test_args=%test_args% gc&set buildnodeweak=1&goto arg-ok
+if /i "%1"=="test-inspector" set test_args=%test_args% inspector&goto arg-ok
 if /i "%1"=="test-internet" set test_args=%test_args% internet&goto arg-ok
 if /i "%1"=="test-pummel"   set test_args=%test_args% pummel&goto arg-ok
-if /i "%1"=="test-all"      set test_args=%test_args% sequential parallel message gc internet pummel&set buildnodeweak=1&set jslint=1&goto arg-ok
+if /i "%1"=="test-all"      set test_args=%test_args% sequential parallel message gc inspector internet pummel&set buildnodeweak=1&set jslint=1&goto arg-ok
 if /i "%1"=="test-known-issues" set test_args=%test_args% known_issues&goto arg-ok
 if /i "%1"=="jslint"        set jslint=1&goto arg-ok
 if /i "%1"=="jslint-ci"     set jslint_ci=1&goto arg-ok
@@ -132,51 +133,26 @@ if defined noprojgen if defined nobuild if defined nosign if not defined msi got
 
 @rem Set environment for msbuild
 
-if defined target_env if "%target_env%" NEQ "vc2015" goto vc-set-2013
 @rem Look for Visual Studio 2015
 echo Looking for Visual Studio 2015
-if not defined VS140COMNTOOLS goto vc-set-2013
-if not exist "%VS140COMNTOOLS%\..\..\vc\vcvarsall.bat" goto vc-set-2013
+if not defined VS140COMNTOOLS goto msbuild-not-found
+if not exist "%VS140COMNTOOLS%\..\..\vc\vcvarsall.bat" goto msbuild-not-found
 echo Found Visual Studio 2015
 if defined msi (
   echo Looking for WiX installation for Visual Studio 2015...
   if not exist "%WIX%\SDK\VS2015" (
     echo Failed to find WiX install for Visual Studio 2015
     echo VS2015 support for WiX is only present starting at version 3.10
-    goto vc-set-2013
+    goto wix-not-found
   )
 )
 if "%VCVARS_VER%" NEQ "140" (
   call "%VS140COMNTOOLS%\..\..\vc\vcvarsall.bat"
   SET VCVARS_VER=140
 )
-if not defined VCINSTALLDIR goto vc-set-2013
+if not defined VCINSTALLDIR goto msbuild-not-found
 set GYP_MSVS_VERSION=2015
 set PLATFORM_TOOLSET=v140
-goto msbuild-found
-
-:vc-set-2013
-if defined target_env if "%target_env%" NEQ "vc2013" goto msbuild-not-found
-@rem Look for Visual Studio 2013
-echo Looking for Visual Studio 2013
-if not defined VS120COMNTOOLS goto msbuild-not-found
-if not exist "%VS120COMNTOOLS%\..\..\vc\vcvarsall.bat" goto msbuild-not-found
-echo Found Visual Studio 2013
-if defined msi (
-  echo Looking for WiX installation for Visual Studio 2013...
-  if not exist "%WIX%\SDK\VS2013" (
-    echo Failed to find WiX install for Visual Studio 2013
-    echo VS2013 support for WiX is only present starting at version 3.8
-    goto wix-not-found
-  )
-)
-if "%VCVARS_VER%" NEQ "120" (
-  call "%VS120COMNTOOLS%\..\..\vc\vcvarsall.bat"
-  SET VCVARS_VER=120
-)
-if not defined VCINSTALLDIR goto msbuild-not-found
-set GYP_MSVS_VERSION=2013
-set PLATFORM_TOOLSET=v120
 goto msbuild-found
 
 :msbuild-not-found
@@ -215,7 +191,7 @@ if "%target%" == "Clean" goto exit
 @rem Skip signing if the `nosign` option was specified.
 if defined nosign goto licensertf
 
-signtool sign /a /d "Node.js" /du "https://nodejs.org" /t http://timestamp.globalsign.com/scripts/timestamp.dll Release\node.exe
+call tools\sign.bat Release\node.exe
 if errorlevel 1 echo Failed to sign exe&goto exit
 
 :licensertf
@@ -293,7 +269,7 @@ msbuild "%~dp0tools\msvs\msi\nodemsi.sln" /m /t:Clean,Build /p:PlatformToolset=%
 if errorlevel 1 goto exit
 
 if defined nosign goto upload
-signtool sign /a /d "Node.js" /du "https://nodejs.org" /t http://timestamp.globalsign.com/scripts/timestamp.dll node-v%FULLVERSION%-%target_arch%.msi
+call tools\sign.bat node-v%FULLVERSION%-%target_arch%.msi
 if errorlevel 1 echo Failed to sign msi&goto exit
 
 :upload
@@ -358,8 +334,8 @@ goto run-tests
 if "%test_args%"=="" goto jslint
 if "%config%"=="Debug" set test_args=--mode=debug %test_args%
 if "%config%"=="Release" set test_args=--mode=release %test_args%
-echo running 'cctest'
-"%config%\cctest"
+echo running 'cctest %cctest_args%'
+"%config%\cctest" %cctest_args%
 echo running 'python tools\test.py %test_args%'
 python tools\test.py %test_args%
 goto jslint
@@ -369,7 +345,7 @@ if defined jslint_ci goto jslint-ci
 if not defined jslint goto exit
 if not exist tools\eslint\lib\eslint.js goto no-lint
 echo running jslint
-%config%\node tools\eslint\bin\eslint.js --cache --rulesdir=tools\eslint-rules benchmark lib test tools
+%config%\node tools\eslint\bin\eslint.js --cache --rule "linebreak-style: 0" --rulesdir=tools\eslint-rules benchmark lib test tools
 goto exit
 
 :jslint-ci
@@ -387,7 +363,7 @@ echo Failed to create vc project files.
 goto exit
 
 :help
-echo vcbuild.bat [debug/release] [msi] [test-all/test-uv/test-internet/test-pummel/test-simple/test-message] [clean] [noprojgen] [small-icu/full-icu/without-intl] [nobuild] [nosign] [x86/x64] [vc2013/vc2015] [download-all] [enable-vtune]
+echo vcbuild.bat [debug/release] [msi] [test-all/test-uv/test-inspector/test-internet/test-pummel/test-simple/test-message] [clean] [noprojgen] [small-icu/full-icu/without-intl] [nobuild] [nosign] [x86/x64] [vc2015] [download-all] [enable-vtune]
 echo Examples:
 echo   vcbuild.bat                : builds release build
 echo   vcbuild.bat debug          : builds debug build

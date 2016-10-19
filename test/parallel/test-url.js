@@ -157,6 +157,17 @@ var parseTests = {
     path: '/Y'
   },
 
+  // whitespace in the front
+  ' http://www.example.com/': {
+    href: 'http://www.example.com/',
+    protocol: 'http:',
+    slashes: true,
+    host: 'www.example.com',
+    hostname: 'www.example.com',
+    pathname: '/',
+    path: '/'
+  },
+
   // + not an invalid host character
   // per https://url.spec.whatwg.org/#host-parsing
   'http://x.y.com+a/b/c': {
@@ -1178,6 +1189,17 @@ var formatTests = {
     search: '?foo=bar#1#2#3&abc=#4##5',
     query: {},
     pathname: '/'
+  },
+
+  // more than 255 characters in hostname which exceeds the limit
+  [`http://${'a'.repeat(255)}.com/node`]: {
+    href: 'http:///node',
+    protocol: 'http:',
+    slashes: true,
+    host: '',
+    hostname: '',
+    pathname: '/node',
+    path: '/node'
   }
 };
 for (const u in formatTests) {
@@ -1642,5 +1664,5 @@ var throws = [
 for (let i = 0; i < throws.length; i++) {
   assert.throws(function() { url.format(throws[i]); }, TypeError);
 }
-assert(url.format('') === '');
-assert(url.format({}) === '');
+assert.strictEqual(url.format(''), '');
+assert.strictEqual(url.format({}), '');
