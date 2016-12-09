@@ -50,7 +50,7 @@ elif [ $keycount -ne 1 ]; then
   done
 fi
 
-gpgfing=$(gpg --fingerprint $gpgkey | grep 'Key fingerprint =' | awk -F' = ' '{print $2}' | tr -d ' ')
+gpgfing=$(gpg --keyid-format 0xLONG --fingerprint $gpgkey | grep 'Key fingerprint =' | awk -F' = ' '{print $2}' | tr -d ' ')
 
 if ! test "$(grep $gpgfing README.md)"; then
   echo 'Error: this GPG key fingerprint is not listed in ./README.md'
@@ -69,15 +69,8 @@ function sign {
 
   local version=$1
 
-  gpgtagkey=$(git tag -v $version 2>&1 | grep 'key ID' | awk '{print $NF}')
-
-  if [ "X${gpgtagkey}" == "X" ]; then
-    echo "Could not find signed tag for \"${version}\""
-    exit 1
-  fi
-
-  if [ "${gpgtagkey}" != "${gpgkey}" ]; then
-    echo "GPG key for \"${version}\" tag is not yours, cannot sign"
+  if ! git tag -v $version 2>&1 | grep "${gpgkey}" | grep key > /dev/null; then
+    echo "Could not find signed tag for \"${version}\" or GPG key is not yours"
     exit 1
   fi
 
