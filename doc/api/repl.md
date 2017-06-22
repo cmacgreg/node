@@ -3,7 +3,7 @@
 > Stability: 2 - Stable
 
 The `repl` module provides a Read-Eval-Print-Loop (REPL) implementation that
-is available both as a standalone program or includable in other applications.
+is available both as a standalone program or includible in other applications.
 It can be accessed using:
 
 ```js
@@ -371,7 +371,7 @@ within the action function for commands registered using the
 added: v0.1.91
 -->
 
-* `options` {Object}
+* `options` {Object | String}
   * `prompt` {String} The input prompt to display. Defaults to `> `.
   * `input` {Readable} The Readable stream from which REPL input will be read.
     Defaults to `process.stdin`.
@@ -412,6 +412,15 @@ added: v0.1.91
     with a custom `eval` function. Defaults to `false`.
 
 The `repl.start()` method creates and starts a `repl.REPLServer` instance.
+
+If `options` is a string, then it specifies the input prompt:
+
+```js
+const repl = require('repl');
+
+// a Unix style prompt
+repl.start('$ ');
+```
 
 ## The Node.js REPL
 
@@ -535,7 +544,7 @@ possible to connect to a long-running Node.js process without restarting it.
 For an example of running a "full-featured" (`terminal`) REPL over
 a `net.Server` and `net.Socket` instance, see: https://gist.github.com/2209310
 
-For an example of running a REPL instance over `curl(1)`,
+For an example of running a REPL instance over curl(1),
 see: https://gist.github.com/2053342
 
 [stream]: stream.html

@@ -67,6 +67,7 @@ function toHTML(opts, cb) {
         filename: opts.filename,
         template: template,
         nodeVersion: nodeVersion,
+        analytics: opts.analytics,
       }, cb);
     });
   }
@@ -90,7 +91,7 @@ function loadGtoc(cb) {
 function toID(filename) {
   return filename
     .replace('.html', '')
-    .replace(/[^\w\-]/g, '-')
+    .replace(/[^\w-]/g, '-')
     .replace(/-+/g, '-');
 }
 
@@ -128,6 +129,13 @@ function render(opts, cb) {
       gtocData.replace('class="nav-' + id, 'class="nav-' + id + ' active')
     );
 
+    if (opts.analytics) {
+      template = template.replace(
+        '<!-- __TRACKING__ -->',
+        analyticsScript(opts.analytics)
+      );
+    }
+
     // content has to be the last thing we do with
     // the lexed tokens, because it's destructive.
     const content = marked.parser(lexed);
@@ -135,6 +143,23 @@ function render(opts, cb) {
 
     cb(null, template);
   });
+}
+
+function analyticsScript(analytics) {
+  return `
+    <script src="assets/dnt_helper.js"></script>
+    <script>
+      if (!_dntEnabled()) {
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;
+        i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},
+        i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];
+        a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,
+        'script','//www.google-analytics.com/analytics.js','ga');
+        ga('create', '${analytics}', 'auto');
+        ga('send', 'pageview');
+      }
+    </script>
+  `;
 }
 
 // handle general body-text replacements
@@ -183,7 +208,7 @@ function parseLists(input) {
           headingIndex = -1;
           heading = null;
         }
-        tok.text = parseAPIHeader(tok.text);
+        tok.text = parseAPIHeader(tok.text).replace(/\n/g, ' ');
         output.push({ type: 'html', text: tok.text });
         return;
       } else if (state === 'MAYBE_STABILITY_BQ') {
@@ -263,7 +288,7 @@ var BSD_ONLY_SYSCALLS = new Set(['lchmod']);
 // Returns modified text, with such refs replace with HTML links, for example
 // '<a href="http://man7.org/linux/man-pages/man2/open.2.html">open(2)</a>'
 function linkManPages(text) {
-  return text.replace(/ ([a-z]+)\((\d)\)/gm, function(match, name, number) {
+  return text.replace(/ ([a-z.]+)\((\d)\)/gm, function(match, name, number) {
     // name consists of lowercase letters, number is a single digit
     var displayAs = name + '(' + number + ')';
     if (BSD_ONLY_SYSCALLS.has(name)) {
@@ -284,7 +309,7 @@ function linkJsTypeDocs(text) {
   // Handle types, for example the source Markdown might say
   // "This argument should be a {Number} or {String}"
   for (i = 0; i < parts.length; i += 2) {
-    typeMatches = parts[i].match(/\{([^\}]+)\}/g);
+    typeMatches = parts[i].match(/\{([^}]+)\}/g);
     if (typeMatches) {
       typeMatches.forEach(function(typeMatch) {
         parts[i] = parts[i].replace(typeMatch, typeParser.toLink(typeMatch));
@@ -297,9 +322,12 @@ function linkJsTypeDocs(text) {
 }
 
 function parseAPIHeader(text) {
+  const classNames = 'api_stability api_stability_$2';
+  const docsUrl = 'documentation.html#documentation_stability_index';
+
   text = text.replace(
     STABILITY_TEXT_REG_EXP,
-    '<pre class="api_stability api_stability_$2">$1 $2$3</pre>'
+    `<pre class="${classNames}"><a href="${docsUrl}">$1 $2</a>$3</pre>`
   );
   return text;
 }

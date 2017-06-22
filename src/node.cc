@@ -51,6 +51,7 @@
 #endif
 
 #include <errno.h>
+#include <fcntl.h>  // _O_RDWR
 #include <limits.h>  // PATH_MAX
 #include <locale.h>
 #include <signal.h>
@@ -2248,7 +2249,7 @@ static void WaitForInspectorDisconnect(Environment* env) {
   if (env->inspector_agent()->IsConnected()) {
     // Restore signal dispositions, the app is done and is no longer
     // capable of handling signals.
-#ifdef __POSIX__
+#if defined(__POSIX__) && !defined(NODE_SHARED_MODE)
     struct sigaction act;
     memset(&act, 0, sizeof(act));
     for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {
@@ -2290,21 +2291,22 @@ void MemoryUsage(const FunctionCallbackInfo<Value>& args) {
     return env->ThrowUVException(err, "uv_resident_set_memory");
   }
 
+  Isolate* isolate = env->isolate();
   // V8 memory usage
   HeapStatistics v8_heap_stats;
-  env->isolate()->GetHeapStatistics(&v8_heap_stats);
+  isolate->GetHeapStatistics(&v8_heap_stats);
 
-  Local<Number> heap_total =
-      Number::New(env->isolate(), v8_heap_stats.total_heap_size());
-  Local<Number> heap_used =
-      Number::New(env->isolate(), v8_heap_stats.used_heap_size());
+  // Get the double array pointer from the Float64Array argument.
+  CHECK(args[0]->IsFloat64Array());
+  Local<Float64Array> array = args[0].As<Float64Array>();
+  CHECK_EQ(array->Length(), 4);
+  Local<ArrayBuffer> ab = array->Buffer();
+  double* fields = static_cast<double*>(ab->GetContents().Data());
 
-  Local<Object> info = Object::New(env->isolate());
-  info->Set(env->rss_string(), Number::New(env->isolate(), rss));
-  info->Set(env->heap_total_string(), heap_total);
-  info->Set(env->heap_used_string(), heap_used);
-
-  args.GetReturnValue().Set(info);
+  fields[0] = rss;
+  fields[1] = v8_heap_stats.total_heap_size();
+  fields[2] = v8_heap_stats.used_heap_size();
+  fields[3] = isolate->AdjustAmountOfExternalAllocatedMemory(0);
 }
 
 
@@ -2415,8 +2417,6 @@ struct node_module* get_linked_module(const char* name) {
   CHECK(mp == nullptr || (mp->nm_flags & NM_F_LINKED) != 0);
   return mp;
 }
-
-typedef void (UV_DYNAMIC* extInit)(Local<Object> exports);
 
 // DLOpen is process.dlopen(module, filename).
 // Used to load 'module.node' dynamically shared objects.
@@ -2603,6 +2603,33 @@ void ClearFatalExceptionHandlers(Environment* env) {
       env->context(),
       env->domain_string(),
       Undefined(env->isolate())).FromJust();
+}
+
+// Call process.emitWarning(str), fmt is a snprintf() format string
+void ProcessEmitWarning(Environment* env, const char* fmt, ...) {
+  char warning[1024];
+  va_list ap;
+
+  va_start(ap, fmt);
+  vsnprintf(warning, sizeof(warning), fmt, ap);
+  va_end(ap);
+
+  HandleScope handle_scope(env->isolate());
+  Context::Scope context_scope(env->context());
+
+  Local<Object> process = env->process_object();
+  MaybeLocal<Value> emit_warning = process->Get(env->context(),
+      FIXED_ONE_BYTE_STRING(env->isolate(), "emitWarning"));
+  Local<Value> arg = node::OneByteString(env->isolate(), warning);
+
+  Local<Value> f;
+
+  if (!emit_warning.ToLocal(&f)) return;
+  if (!f->IsFunction()) return;
+
+  // MakeCallback() unneeded, because emitWarning is internal code, it calls
+  // process.emit('warning', ..), but does so on the nextTick.
+  f.As<v8::Function>()->Call(process, 1, &arg);
 }
 
 
@@ -2899,7 +2926,7 @@ static Local<Object> GetFeatures(Environment* env) {
   // TODO(bnoordhuis) ping libuv
   obj->Set(FIXED_ONE_BYTE_STRING(env->isolate(), "ipv6"), True(env->isolate()));
 
-#ifdef OPENSSL_NPN_NEGOTIATED
+#ifndef OPENSSL_NO_NEXTPROTONEG
   Local<Boolean> tls_npn = True(env->isolate());
 #else
   Local<Boolean> tls_npn = False(env->isolate());
@@ -3678,7 +3705,14 @@ static void PrintHelp() {
          "                         (will extend linked-in data)\n"
 #endif
 #endif
-         "NODE_REPL_HISTORY        path to the persistent REPL history file\n"
+         "NODE_NO_WARNINGS           set to 1 to silence process warnings\n"
+#ifdef _WIN32
+         "NODE_PATH               ';'-separated list of directories\n"
+#else
+         "NODE_PATH               ':'-separated list of directories\n"
+#endif
+         "                        prefixed to the module search path\n"
+         "NODE_REPL_HISTORY       path to the persistent REPL history file\n"
          "\n"
          "Documentation can be found at https://nodejs.org/\n");
 }
@@ -4225,6 +4259,7 @@ inline void PlatformInit() {
 
   CHECK_EQ(err, 0);
 
+#ifndef NODE_SHARED_MODE
   // Restore signal dispositions, the parent process may have changed them.
   struct sigaction act;
   memset(&act, 0, sizeof(act));
@@ -4238,6 +4273,7 @@ inline void PlatformInit() {
     act.sa_handler = (nr == SIGPIPE) ? SIG_IGN : SIG_DFL;
     CHECK_EQ(0, sigaction(nr, &act, nullptr));
   }
+#endif  // !NODE_SHARED_MODE
 
   RegisterSignalHandler(SIGINT, SignalExit, true);
   RegisterSignalHandler(SIGTERM, SignalExit, true);
@@ -4263,6 +4299,19 @@ inline void PlatformInit() {
     } while (min + 1 < max);
   }
 #endif  // __POSIX__
+#ifdef _WIN32
+  for (int fd = 0; fd <= 2; ++fd) {
+    auto handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+    if (handle == INVALID_HANDLE_VALUE ||
+        GetFileType(handle) == FILE_TYPE_UNKNOWN) {
+      // Ignore _close result. If it fails or not depends on used Windows
+      // version. We will just check _open result.
+      _close(fd);
+      if (fd != _open("nul", _O_RDWR))
+        ABORT();
+    }
+  }
+#endif  // _WIN32
 }
 
 
@@ -4672,6 +4721,8 @@ int Start(int argc, char** argv) {
   Init(&argc, const_cast<const char**>(argv), &exec_argc, &exec_argv);
 
 #if HAVE_OPENSSL
+  if (const char* extra = secure_getenv("NODE_EXTRA_CA_CERTS"))
+    crypto::UseExtraCaCerts(extra);
 #ifdef NODE_FIPS_MODE
   // In the case of FIPS builds we should make sure
   // the random source is properly initialized first.

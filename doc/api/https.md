@@ -69,7 +69,8 @@ const https = require('https');
 const fs = require('fs');
 
 const options = {
-  pfx: fs.readFileSync('server.pfx')
+  pfx: fs.readFileSync('test/fixtures/test_cert.pfx'),
+  passphrase: 'sample'
 };
 
 https.createServer(options, (req, res) => {
@@ -143,14 +144,14 @@ Example:
 ```js
 const https = require('https');
 
-var options = {
+const options = {
   hostname: 'encrypted.google.com',
   port: 443,
   path: '/',
   method: 'GET'
 };
 
-var req = https.request(options, (res) => {
+const req = https.request(options, (res) => {
   console.log('statusCode:', res.statusCode);
   console.log('headers:', res.headers);
 
@@ -158,11 +159,11 @@ var req = https.request(options, (res) => {
     process.stdout.write(d);
   });
 });
-req.end();
 
 req.on('error', (e) => {
   console.error(e);
 });
+req.end();
 ```
 
 The options argument has the following options
@@ -192,8 +193,7 @@ The options argument has the following options
  - `false`: opts out of connection pooling with an Agent, defaults request to
    `Connection: close`.
 
-The following options from [`tls.connect()`][] can also be specified. However, a
-[`globalAgent`][] silently ignores these.
+The following options from [`tls.connect()`][] can also be specified:
 
 - `pfx`: Certificate, Private key and CA certificates to use for SSL. Default `null`.
 - `key`: Private key to use for SSL. Default `null`.
@@ -219,7 +219,7 @@ In order to specify these options, use a custom [`Agent`][].
 Example:
 
 ```js
-var options = {
+const options = {
   hostname: 'encrypted.google.com',
   port: 443,
   path: '/',
@@ -229,8 +229,8 @@ var options = {
 };
 options.agent = new https.Agent(options);
 
-var req = https.request(options, (res) => {
-  ...
+const req = https.request(options, (res) => {
+  // ...
 });
 ```
 
@@ -239,7 +239,7 @@ Alternatively, opt out of connection pooling by not using an `Agent`.
 Example:
 
 ```js
-var options = {
+const options = {
   hostname: 'encrypted.google.com',
   port: 443,
   path: '/',
@@ -249,8 +249,8 @@ var options = {
   agent: false
 };
 
-var req = https.request(options, (res) => {
-  ...
+const req = https.request(options, (res) => {
+  // ...
 });
 ```
 

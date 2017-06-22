@@ -4,10 +4,10 @@
 
 <!-- type=misc -->
 
-Node.js includes a full-featured out-of-process debugging utility accessible
-via a simple [TCP-based protocol][] and built-in debugging client. To use it,
-start Node.js with the `debug` argument followed by the path to the script to
-debug; a prompt will be displayed indicating successful launch of the debugger:
+Node.js includes an out-of-process debugging utility accessible via a
+[TCP-based protocol][] and built-in debugging client. To use it, start Node.js
+with the `debug` argument followed by the path to the script to debug; a prompt
+will be displayed indicating successful launch of the debugger:
 
 ```txt
 $ node debug myscript.js
@@ -117,7 +117,7 @@ script.js
 on line 1
 
 It is also possible to set a breakpoint in a file (module) that
-isn't loaded yet:
+is not loaded yet:
 
 ```txt
 $ node debug test/fixtures/break-in-module/main.js

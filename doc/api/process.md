@@ -1,4 +1,4 @@
-# process
+# Process
 
 <!-- type=global -->
 
@@ -290,7 +290,7 @@ too many listeners have been added to an event
 
 ```txt
 $ node
-> event.defaultMaxListeners = 1;
+> events.defaultMaxListeners = 1;
 > process.on('foo', () => {});
 > process.on('foo', () => {});
 > (node:38638) Warning: Possible EventEmitter memory leak detected. 2 foo
@@ -303,7 +303,7 @@ adds a custom handler to the `'warning'` event:
 ```txt
 $ node --no-warnings
 > var p = process.on('warning', (warning) => console.warn('Do not do that!'));
-> event.defaultMaxListeners = 1;
+> events.defaultMaxListeners = 1;
 > process.on('foo', () => {});
 > process.on('foo', () => {});
 > Do not do that!
@@ -447,6 +447,8 @@ generate a core file.
 added: v0.5.0
 -->
 
+* {String}
+
 The `process.arch` property returns a String identifying the processor
 architecture that the Node.js process is currently running on. For instance
 `'arm'`, `'ia32'`, or `'x64'`.
@@ -459,6 +461,8 @@ console.log(`This processor architecture is ${process.arch}`);
 <!-- YAML
 added: v0.1.27
 -->
+
+* {Array}
 
 The `process.argv` property returns an array containing the command line
 arguments passed when the Node.js process was launched. The first element will
@@ -497,6 +501,8 @@ Would generate the output:
 added: 6.4.0
 -->
 
+* {String}
+
 The `process.argv0` property stores a read-only copy of the original value of
 `argv[0]` passed when Node.js starts.
 
@@ -534,6 +540,8 @@ catch (err) {
 <!-- YAML
 added: v0.7.7
 -->
+
+* {Object}
 
 The `process.config` property returns an Object containing the JavaScript
 representation of the configure options used to compile the current Node.js
@@ -578,6 +586,8 @@ replace the value of `process.config`.
 added: v0.7.2
 -->
 
+* {Boolean}
+
 If the Node.js process is spawned with an IPC channel (see the [Child Process][]
 and [Cluster][] documentation), the `process.connected` property will return
 `true` so long as the IPC channel is connected and will return `false` after
@@ -593,6 +603,9 @@ added: v6.1.0
 
 * `previousValue` {Object} A previous return value from calling
   `process.cpuUsage()`
+* Returns: {Object}
+    * `user` {Integer}
+    * `system` {Integer}
 
 The `process.cpuUsage()` method returns the user and system CPU time usage of
 the current process, in an object with properties `user` and `system`, whose
@@ -619,6 +632,8 @@ console.log(process.cpuUsage(startUsage));
 <!-- YAML
 added: v0.1.8
 -->
+
+* Returns: {String}
 
 The `process.cwd()` method returns the current working directory of the Node.js
 process.
@@ -647,6 +662,8 @@ If the Node.js process was not spawned with an IPC channel,
 <!-- YAML
 added: v0.1.27
 -->
+
+* {Object}
 
 The `process.env` property returns an object containing the user environment.
 See environ(7).
@@ -737,13 +754,13 @@ specific process warnings. These can be listened for by adding a handler to the
 ```js
 // Emit a warning using a string...
 process.emitWarning('Something happened!');
-  // Emits: (node: 56338) Warning: Something happened!
+// Emits: (node: 56338) Warning: Something happened!
 ```
 
 ```js
 // Emit a warning using a string and a name...
 process.emitWarning('Something Happened!', 'CustomWarning');
-  // Emits: (node:56338) CustomWarning: Something Happened!
+// Emits: (node:56338) CustomWarning: Something Happened!
 ```
 
 In each of the previous examples, an `Error` object is generated internally by
@@ -768,7 +785,7 @@ const myWarning = new Error('Warning! Something happened!');
 myWarning.name = 'CustomWarning';
 
 process.emitWarning(myWarning);
-  // Emits: (node:56338) CustomWarning: Warning! Something Happened!
+// Emits: (node:56338) CustomWarning: Warning! Something Happened!
 ```
 
 A `TypeError` is thrown if `warning` is anything other than a string or `Error`
@@ -802,15 +819,17 @@ function emitMyWarning() {
   }
 }
 emitMyWarning();
-  // Emits: (node: 56339) Warning: Only warn once!
+// Emits: (node: 56339) Warning: Only warn once!
 emitMyWarning();
-  // Emits nothing
+// Emits nothing
 ```
 
 ## process.execArgv
 <!-- YAML
 added: v0.7.7
 -->
+
+* {Object}
 
 The `process.execArgv` property returns the set of Node.js-specific command-line
 options passed when the Node.js process was launched. These options do not
@@ -842,13 +861,15 @@ And `process.argv`:
 added: v0.1.100
 -->
 
+* {String}
+
 The `process.execPath` property returns the absolute pathname of the executable
 that started the Node.js process.
 
 For example:
 
-```sh
-/usr/local/bin/node
+```js
+'/usr/local/bin/node'
 ```
 
 
@@ -859,10 +880,11 @@ added: v0.1.13
 
 * `code` {Integer} The exit code. Defaults to `0`.
 
-The `process.exit()` method instructs Node.js to terminate the process as
-quickly as possible with the specified exit `code`. If the `code` is omitted,
-exit uses either the 'success' code `0` or the value of `process.exitCode` if
-specified.
+The `process.exit()` method instructs Node.js to terminate the process
+synchronously with an exit status of `code`. If `code` is omitted, exit uses
+either the 'success' code `0` or the value of `process.exitCode` if it has been
+set.  Node.js will not terminate until all the [`'exit'`] event listeners are
+called.
 
 To exit with a 'failure' code:
 
@@ -878,7 +900,7 @@ pending* that have not yet completed fully, *including* I/O operations to
 `process.stdout` and `process.stderr`.
 
 In most situations, it is not actually necessary to call `process.exit()`
-explicitly. The Node.js process will exit on it's own *if there is no additional
+explicitly. The Node.js process will exit on its own *if there is no additional
 work pending* in the event loop. The `process.exitCode` property can be set to
 tell the process which exit code to use when the process exits gracefully.
 
@@ -895,7 +917,7 @@ if (someConditionNotMet()) {
 ```
 
 The reason this is problematic is because writes to `process.stdout` in Node.js
-are sometimes *non-blocking* and may occur over multiple ticks of the Node.js
+are sometimes *asynchronous* and may occur over multiple ticks of the Node.js
 event loop. Calling `process.exit()`, however, forces the process to exit
 *before* those additional writes to `stdout` can be performed.
 
@@ -920,6 +942,8 @@ is safer than calling `process.exit()`.
 <!-- YAML
 added: v0.11.8
 -->
+
+* {Integer}
 
 A number which will be the process exit code, when the process either
 exits gracefully, or is exited via [`process.exit()`][] without specifying
@@ -951,6 +975,8 @@ or Android)
 added: v2.0.0
 -->
 
+* Returns: {Object}
+
 The `process.geteuid()` method returns the numerical effective user identity of
 the process. (See geteuid(2).)
 
@@ -967,6 +993,8 @@ Android)
 <!-- YAML
 added: v0.1.31
 -->
+
+* Returns: {Object}
 
 The `process.getgid()` method returns the numerical group identity of the
 process. (See getgid(2).)
@@ -986,6 +1014,8 @@ Android)
 added: v0.9.4
 -->
 
+* Returns: {Array}
+
 The `process.getgroups()` method returns an array with the supplementary group
 IDs. POSIX leaves it unspecified if the effective group ID is included but
 Node.js ensures it always is.
@@ -997,6 +1027,8 @@ Android)
 <!-- YAML
 added: v0.1.28
 -->
+
+* Returns: {Integer}
 
 The `process.getuid()` method returns the numeric user identity of the process.
 (See getuid(2).)
@@ -1119,7 +1151,7 @@ added: v0.1.17
 The `process.mainModule` property provides an alternative way of retrieving
 [`require.main`][]. The difference is that if the main module changes at
 runtime, [`require.main`][] may still refer to the original main module in
-modules that were required before the change occurred. Generally it's
+modules that were required before the change occurred. Generally, it's
 safe to assume that the two refer to the same module.
 
 As with [`require.main`][], `process.mainModule` will be `undefined` if there
@@ -1129,6 +1161,12 @@ is no entry script.
 <!-- YAML
 added: v0.1.16
 -->
+
+* Returns: {Object}
+    * `rss` {Integer}
+    * `heapTotal` {Integer}
+    * `heapUsed` {Integer}
+    * `external` {Integer}
 
 The `process.memoryUsage()` method returns an object describing the memory usage
 of the Node.js process measured in bytes.
@@ -1145,11 +1183,14 @@ Will generate:
 {
   rss: 4935680,
   heapTotal: 1826816,
-  heapUsed: 650472
+  heapUsed: 650472,
+  external: 49879
 }
 ```
 
 `heapTotal` and `heapUsed` refer to V8's memory usage.
+`external` refers to the memory usage of C++ objects bound to JavaScript
+objects managed by V8.
 
 ## process.nextTick(callback[, ...args])
 <!-- YAML
@@ -1163,7 +1204,7 @@ The `process.nextTick()` method adds the `callback` to the "next tick queue".
 Once the current turn of the event loop turn runs to completion, all callbacks
 currently in the next tick queue will be called.
 
-This is *not* a simple alias to [`setTimeout(fn, 0)`][], it's much more
+This is *not* a simple alias to [`setTimeout(fn, 0)`][]. It is much more
 efficient.  It runs before any additional I/O events (including
 timers) fire in subsequent ticks of the event loop.
 
@@ -1216,9 +1257,12 @@ function maybeSync(arg, cb) {
 This API is hazardous because in the following case:
 
 ```js
-maybeSync(true, () => {
+const maybeTrue = Math.random() > 0.5;
+
+maybeSync(maybeTrue, () => {
   foo();
 });
+
 bar();
 ```
 
@@ -1247,6 +1291,8 @@ happening, just like a `while(true);` loop.
 added: v0.1.15
 -->
 
+* {Integer}
+
 The `process.pid` property returns the PID of the process.
 
 ```js
@@ -1257,6 +1303,8 @@ console.log(`This process is pid ${process.pid}`);
 <!-- YAML
 added: v0.1.16
 -->
+
+* {String}
 
 The `process.platform` property returns a string identifying the operating
 system platform on which the Node.js process is running. For instance
@@ -1323,7 +1371,7 @@ added: v0.5.9
 * `sendHandle` {Handle object}
 * `options` {Object}
 * `callback` {Function}
-* Return: {Boolean}
+* Returns: {Boolean}
 
 If Node.js is spawned with an IPC channel, the `process.send()` method can be
 used to send messages to the parent process. Messages will be received as a
@@ -1465,28 +1513,24 @@ Android)
 
 ## process.stderr
 
-The `process.stderr` property returns a [Writable][] stream equivalent to or
-associated with `stderr` (fd `2`).
+* {Stream}
 
-Note: `process.stderr` and `process.stdout` differ from other Node.js streams
-in several ways:
-1. They cannot be closed ([`end()`][] will throw).
-2. They never emit the [`'finish'`][] event.
-3. Writes _can_ block when output is redirected to a file.
-  - Note that disks are fast and operating systems normally employ write-back
-    caching so this is very uncommon.
-4. Writes on UNIX **will** block by default if output is going to a TTY
-   (a terminal).
-5. Windows functionality differs. Writes block except when output is going to a
-   TTY.
+The `process.stderr` property returns a stream connected to
+`stderr` (fd `2`). It is a [`net.Socket`][] (which is a [Duplex][]
+stream) unless fd `2` refers to a file, in which case it is
+a [Writable][] stream.
 
-To check if Node.js is being run in a TTY context, read the `isTTY` property
-on `process.stderr`, `process.stdout`, or `process.stdin`:
+Note: `process.stderr` differs from other Node.js streams in important ways,
+see [note on process I/O][] for more information.
 
 ## process.stdin
 
-The `process.stdin` property returns a [Readable][] stream equivalent to or
-associated with `stdin` (fd `0`).
+* {Stream}
+
+The `process.stdin` property returns a stream connected to
+`stdin` (fd `0`). It is a [`net.Socket`][] (which is a [Duplex][]
+stream) unless fd `0` refers to a file, in which case it is
+a [Readable][] stream.
 
 For example:
 
@@ -1505,7 +1549,7 @@ process.stdin.on('end', () => {
 });
 ```
 
-As a [Readable][] stream, `process.stdin` can also be used in "old" mode that
+As a [Duplex][] stream, `process.stdin` can also be used in "old" mode that
 is compatible with scripts written for Node.js prior to v0.10.
 For more information see [Stream compatibility][].
 
@@ -1515,40 +1559,56 @@ must call `process.stdin.resume()` to read from it. Note also that calling
 
 ## process.stdout
 
-The `process.stdout` property returns a [Writable][] stream equivalent to or
-associated with `stdout` (fd `1`).
+* {Stream}
 
-For example:
+The `process.stdout` property returns a stream connected to
+`stdout` (fd `1`). It is a [`net.Socket`][] (which is a [Duplex][]
+stream) unless fd `1` refers to a file, in which case it is
+a [Writable][] stream.
+
+For example, to copy process.stdin to process.stdout:
 
 ```js
-console.log = (msg) => {
-  process.stdout.write(`${msg}\n`);
-};
+process.stdin.pipe(process.stdout);
 ```
 
-Note: `process.stderr` and `process.stdout` differ from other Node.js streams
-in several ways:
-1. They cannot be closed ([`end()`][] will throw).
-2. They never emit the [`'finish'`][] event.
-3. Writes _can_ block when output is redirected to a file.
-  - Note that disks are fast and operating systems normally employ write-back
-    caching so this is very uncommon.
-4. Writes on UNIX **will** block by default if output is going to a TTY
-   (a terminal).
-5. Windows functionality differs. Writes block except when output is going to a
-   TTY.
+Note: `process.stdout` differs from other Node.js streams in important ways,
+see [note on process I/O][] for more information.
 
-To check if Node.js is being run in a TTY context, read the `isTTY` property
-on `process.stderr`, `process.stdout`, or `process.stdin`:
+### A note on process I/O
 
-### TTY Terminals and `process.stdout`
+`process.stdout` and `process.stderr` differ from other Node.js streams in
+important ways:
 
-The `process.stderr` and `process.stdout` streams are blocking when outputting
-to TTYs (terminals) on OS X as a workaround for the operating system's small,
-1kb buffer size. This is to prevent interleaving between `stdout` and `stderr`.
+1. They are used internally by [`console.log()`][] and [`console.error()`][],
+   respectively.
+2. They cannot be closed ([`end()`][] will throw).
+3. They will never emit the [`'finish'`][] event.
+4. Writes may be synchronous depending on the what the stream is connected to
+   and whether the system is Windows or Unix:
+   - Files: *synchronous* on Windows and Linux
+   - TTYs (Terminals): *asynchronous* on Windows, *synchronous* on Unix
+   - Pipes (and sockets): *synchronous* on Windows, *asynchronous* on Unix
 
-To check if Node.js is being run in a [TTY][] context, check the `isTTY`
-property on `process.stderr`, `process.stdout`, or `process.stdin`.
+These behaviours are partly for historical reasons, as changing them would
+create backwards incompatibility, but they are also expected by some users.
+
+Synchronous writes avoid problems such as output written with `console.log()` or
+`console.write()` being unexpectedly interleaved, or not written at all if
+`process.exit()` is called before an asynchronous write completes. See
+[`process.exit()`][] for more information.
+
+***Warning***: Synchronous writes block the event loop until the write has
+completed. This can be near instantaneous in the case of output to a file, but
+under high system load, pipes that are not being read at the receiving end, or
+with slow terminals or file systems, its possible for the event loop to be
+blocked often enough and long enough to have severe negative performance
+impacts. This may not be a problem when writing to an interactive terminal
+session, but consider this particularly careful when doing production logging to
+the process output streams.
+
+To check if a stream is connected to a [TTY][] context, check the `isTTY`
+property.
 
 For instance:
 ```console
@@ -1556,7 +1616,6 @@ $ node -p "Boolean(process.stdin.isTTY)"
 true
 $ echo "foo" | node -p "Boolean(process.stdin.isTTY)"
 false
-
 $ node -p "Boolean(process.stdout.isTTY)"
 true
 $ node -p "Boolean(process.stdout.isTTY)" | cat
@@ -1569,6 +1628,8 @@ See the [TTY][] documentation for more information.
 <!-- YAML
 added: v0.1.104
 -->
+
+* {String}
 
 The `process.title` property returns the current process title (i.e. returns
 the current value of `ps`). Assigning a new value to `process.title` modifies
@@ -1609,6 +1670,8 @@ console.log(
 added: v0.5.0
 -->
 
+* Returns: {Number}
+
 The `process.uptime()` method returns the number of seconds the current Node.js
 process has been running.
 
@@ -1616,6 +1679,8 @@ process has been running.
 <!-- YAML
 added: v0.1.3
 -->
+
+* {String}
 
 The `process.version` property returns the Node.js version string.
 
@@ -1628,8 +1693,12 @@ console.log(`Version: ${process.version}`);
 added: v0.2.0
 -->
 
+* {Object}
+
 The `process.versions` property returns an object listing the version strings of
-Node.js and its dependencies.
+Node.js and its dependencies. `process.versions.modules` indicates the current
+ABI version, which is increased whenever a C++ API changes. Node.js will refuse
+to load modules that were compiled against a different module ABI version.
 
 ```js
 console.log(process.versions);
@@ -1698,6 +1767,7 @@ cases:
   the high-order bit, and then contain the value of the signal code.
 
 
+[`'exit'`]: #process_event_exit
 [`'finish'`]: stream.html#stream_event_finish
 [`'message'`]: child_process.html#child_process_event_message
 [`'rejectionHandled'`]: #process_event_rejectionhandled
@@ -1710,6 +1780,8 @@ cases:
 [`Error`]: errors.html#errors_class_error
 [`EventEmitter`]: events.html#events_class_eventemitter
 [`JSON.stringify()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
+[`console.error()`]: console.html#console_console_error_data_args
+[`console.log()`]: console.html#console_console_log_data_args
 [`net.Server`]: net.html#net_class_net_server
 [`net.Socket`]: net.html#net_class_net_socket
 [`process.argv`]: #process_process_argv
@@ -1719,14 +1791,16 @@ cases:
 [`promise.catch()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch
 [`require.main`]: modules.html#modules_accessing_the_main_module
 [`setTimeout(fn, 0)`]: timers.html#timers_settimeout_callback_delay_args
+[note on process I/O]: process.html#process_a_note_on_process_i_o
 [process_emit_warning]: #process_process_emitwarning_warning_name_ctor
 [process_warning]: #process_event_warning
 [Signal Events]: #process_signal_events
 [Stream compatibility]: stream.html#stream_compatibility_with_older_node_js_versions
 [TTY]: tty.html#tty_tty
-[Writable]: stream.html
-[Readable]: stream.html
+[Writable]: stream.html#stream_writable_streams
+[Readable]: stream.html#stream_readable_streams
+[Duplex]: stream.html#stream_duplex_and_transform_streams
 [Child Process]: child_process.html
 [Cluster]: cluster.html
-[`process.exitCode`]: #processexitcode-1
+[`process.exitCode`]: #process_process_exitcode
 [LTS]: https://github.com/nodejs/LTS/

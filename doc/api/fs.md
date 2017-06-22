@@ -218,7 +218,7 @@ For a regular file [`util.inspect(stats)`][] would return a string very
 similar to this:
 
 ```js
-{
+Stats {
   dev: 2114,
   ino: 48064969,
   mode: 33188,
@@ -232,8 +232,7 @@ similar to this:
   atime: Mon, 10 Oct 2011 23:24:11 GMT,
   mtime: Mon, 10 Oct 2011 23:24:11 GMT,
   ctime: Mon, 10 Oct 2011 23:24:11 GMT,
-  birthtime: Mon, 10 Oct 2011 23:24:11 GMT
-}
+  birthtime: Mon, 10 Oct 2011 23:24:11 GMT }
 ```
 
 Please note that `atime`, `mtime`, `birthtime`, and `ctime` are
@@ -251,13 +250,13 @@ page.
 The times in the stat object have the following semantics:
 
 * `atime` "Access Time" - Time when file data last accessed.  Changed
-  by the `mknod(2)`, `utimes(2)`, and `read(2)` system calls.
+  by the mknod(2), utimes(2), and read(2) system calls.
 * `mtime` "Modified Time" - Time when file data last modified.
-  Changed by the `mknod(2)`, `utimes(2)`, and `write(2)` system calls.
+  Changed by the mknod(2), utimes(2), and write(2) system calls.
 * `ctime` "Change Time" - Time when file status was last changed
-  (inode data modification).  Changed by the `chmod(2)`, `chown(2)`,
-  `link(2)`, `mknod(2)`, `rename(2)`, `unlink(2)`, `utimes(2)`,
-  `read(2)`, and `write(2)` system calls.
+  (inode data modification).  Changed by the chmod(2), chown(2),
+  link(2), mknod(2), rename(2), unlink(2), utimes(2),
+  read(2), and write(2) system calls.
 * `birthtime` "Birth Time" -  Time of file creation. Set once when the
   file is created.  On filesystems where birthtime is not available,
   this field may instead hold either the `ctime` or
@@ -265,7 +264,7 @@ The times in the stat object have the following semantics:
   value may be greater than `atime` or `mtime` in this case. On Darwin
   and other FreeBSD variants, also set if the `atime` is explicitly
   set to an earlier value than the current `birthtime` using the
-  `utimes(2)` system call.
+  utimes(2) system call.
 
 Prior to Node v0.12, the `ctime` held the `birthtime` on Windows
 systems.  Note that as of v0.12, `ctime` is not "creation time", and
@@ -377,12 +376,12 @@ fs.access('myfile', (err) => {
 ```js
 fs.open('myfile', 'wx', (err, fd) => {
   if (err) {
-    if (err.code === "EEXIST") {
+    if (err.code === 'EEXIST') {
       console.error('myfile already exists');
       return;
-    } else {
-      throw err;
     }
+
+    throw err;
   }
 
   writeMyData(fd);
@@ -394,12 +393,12 @@ fs.open('myfile', 'wx', (err, fd) => {
 ```js
 fs.access('myfile', (err) => {
   if (err) {
-    if (err.code === "ENOENT") {
+    if (err.code === 'ENOENT') {
       console.error('myfile does not exist');
       return;
-    } else {
-      throw err;
     }
+
+    throw err;
   }
 
   fs.open('myfile', 'r', (err, fd) => {
@@ -414,12 +413,12 @@ fs.access('myfile', (err) => {
 ```js
 fs.open('myfile', 'r', (err, fd) => {
   if (err) {
-    if (err.code === "ENOENT") {
+    if (err.code === 'ENOENT') {
       console.error('myfile does not exist');
       return;
-    } else {
-      throw err;
     }
+
+    throw err;
   }
 
   readMyData(fd);
@@ -602,7 +601,9 @@ default value of 64 kb for the same parameter.
 
 `options` can include `start` and `end` values to read a range of bytes from
 the file instead of the entire file.  Both `start` and `end` are inclusive and
-start at 0. The `encoding` can be any one of those accepted by [`Buffer`][].
+start counting at 0. If `fd` is specified and `start` is omitted or `undefined`,
+`fs.createReadStream()` reads sequentially from the current file position.
+The `encoding` can be any one of those accepted by [`Buffer`][].
 
 If `fd` is specified, `ReadStream` will ignore the `path` argument and will use
 the specified file descriptor. This means that no `'open'` event will be
@@ -727,13 +728,14 @@ fs.exists('myfile', (exists) => {
 ```js
 fs.open('myfile', 'wx', (err, fd) => {
   if (err) {
-    if (err.code === "EEXIST") {
+    if (err.code === 'EEXIST') {
       console.error('myfile already exists');
       return;
-    } else {
-      throw err;
     }
+
+    throw err;
   }
+
   writeMyData(fd);
 });
 ```
@@ -757,15 +759,15 @@ fs.exists('myfile', (exists) => {
 ```js
 fs.open('myfile', 'r', (err, fd) => {
   if (err) {
-    if (err.code === "ENOENT") {
+    if (err.code === 'ENOENT') {
       console.error('myfile does not exist');
       return;
-    } else {
-      throw err;
     }
-  } else {
-    readMyData(fd);
+
+    throw err;
   }
+
+  readMyData(fd);
 });
 ```
 
@@ -918,7 +920,7 @@ For example, the following program retains only the first four bytes of the file
 
 ```js
 console.log(fs.readFileSync('temp.txt', 'utf8'));
-  // prints Node.js
+// Prints: Node.js
 
 // get the file descriptor of the file to be truncated
 const fd = fs.openSync('temp.txt', 'r+');
@@ -928,7 +930,7 @@ fs.ftruncate(fd, 4, (err) => {
   assert.ifError(err);
   console.log(fs.readFileSync('temp.txt', 'utf8'));
 });
-  // prints Node
+// Prints: Node
 ```
 
 If the file previously was shorter than `len` bytes, it is extended, and the
@@ -936,18 +938,18 @@ extended part is filled with null bytes ('\0'). For example,
 
 ```js
 console.log(fs.readFileSync('temp.txt', 'utf-8'));
-  // prints Node.js
+// Prints: Node.js
 
 // get the file descriptor of the file to be truncated
 const fd = fs.openSync('temp.txt', 'r+');
 
 // truncate the file to 10 bytes, whereas the actual size is 7 bytes
 fs.ftruncate(fd, 10, (err) => {
-  assert.ifError(!err);
+  assert.ifError(err);
   console.log(fs.readFileSync('temp.txt'));
 });
-  // prints <Buffer 4e 6f 64 65 2e 6a 73 00 00 00>
-  // ('Node.js\0\0\0' in UTF8)
+// Prints: <Buffer 4e 6f 64 65 2e 6a 73 00 00 00>
+// ('Node.js\0\0\0' in UTF8)
 ```
 
 The last three bytes are null bytes ('\0'), to compensate the over-truncation.
@@ -1034,25 +1036,25 @@ deprecated: v0.4.7
 
 Synchronous lchown(2). Returns `undefined`.
 
-## fs.link(srcpath, dstpath, callback)
+## fs.link(existingPath, newPath, callback)
 <!-- YAML
 added: v0.1.31
 -->
 
-* `srcpath` {String | Buffer}
-* `dstpath` {String | Buffer}
+* `existingPath` {String | Buffer}
+* `newPath` {String | Buffer}
 * `callback` {Function}
 
 Asynchronous link(2). No arguments other than a possible exception are given to
 the completion callback.
 
-## fs.linkSync(srcpath, dstpath)
+## fs.linkSync(existingPath, newPath)
 <!-- YAML
 added: v0.1.31
 -->
 
-* `srcpath` {String | Buffer}
-* `dstpath` {String | Buffer}
+* `existingPath` {String | Buffer}
+* `newPath` {String | Buffer}
 
 Synchronous link(2). Returns `undefined`.
 
@@ -1127,7 +1129,7 @@ Example:
 fs.mkdtemp('/tmp/foo-', (err, folder) => {
   if (err) throw err;
   console.log(folder);
-    // Prints: /tmp/foo-itXde2
+  // Prints: /tmp/foo-itXde2
 });
 ```
 
@@ -1145,20 +1147,20 @@ const tmpDir = '/tmp';
 fs.mkdtemp(tmpDir, (err, folder) => {
   if (err) throw err;
   console.log(folder);
-    // Will print something similar to `/tmpabc123`.
-    // Note that a new temporary directory is created
-    // at the file system root rather than *within*
-    // the /tmp directory.
+  // Will print something similar to `/tmpabc123`.
+  // Note that a new temporary directory is created
+  // at the file system root rather than *within*
+  // the /tmp directory.
 });
 
 // This method is *CORRECT*:
-const path = require('path');
-fs.mkdtemp(tmpDir + path.sep, (err, folder) => {
+const { sep } = require('path');
+fs.mkdtemp(`${tmpDir}${sep}`, (err, folder) => {
   if (err) throw err;
   console.log(folder);
-    // Will print something similar to `/tmp/abc123`.
-    // A new temporary directory is created within
-    // the /tmp directory.
+  // Will print something similar to `/tmp/abc123`.
+  // A new temporary directory is created within
+  // the /tmp directory.
 });
 ```
 
@@ -1562,7 +1564,7 @@ argument will automatically be normalized to absolute path.
 Here is an example below:
 
 ```js
-fs.symlink('./foo', './new-port');
+fs.symlink('./foo', './new-port', callback);
 ```
 
 It creates a symbolic link named "new-port" that points to "foo".
@@ -1701,8 +1703,12 @@ The listener callback gets two arguments `(eventType, filename)`.  `eventType` i
 `'rename'` or `'change'`, and `filename` is the name of the file which triggered
 the event.
 
-Please note the listener callback is attached to the `'change'` event
-fired by [`fs.FSWatcher`][], but they are not the same thing.
+Note that on most platforms, `'rename'` is emitted whenever a filename appears
+or disappears in the directory.
+
+Also note the listener callback is attached to the `'change'` event fired by
+[`fs.FSWatcher`][], but it is not the same thing as the `'change'` value of
+`eventType`.
 
 ### Caveats
 
@@ -1826,7 +1832,8 @@ added: v0.0.2
 
 Write `buffer` to the file specified by `fd`.
 
-`offset` and `length` determine the part of the buffer to be written.
+`offset` determines the part of the buffer to be written, and `length` is
+an integer specifying the number of bytes to write.
 
 `position` refers to the offset from the beginning of the file where this data
 should be written. If `typeof position !== 'number'`, the data will be written
@@ -1903,7 +1910,7 @@ Example:
 ```js
 fs.writeFile('message.txt', 'Hello Node.js', (err) => {
   if (err) throw err;
-  console.log('It\'s saved!');
+  console.log('The file has been saved!');
 });
 ```
 
@@ -2209,7 +2216,7 @@ The following constants are meant for use with the [`fs.Stats`][] object's
 [Readable Stream]: stream.html#stream_class_stream_readable
 [Writable Stream]: stream.html#stream_class_stream_writable
 [inode]: https://en.wikipedia.org/wiki/Inode
-[FS Constants]: #fs_fs_constants
+[FS Constants]: #fs_fs_constants_1
 [`inotify`]: http://man7.org/linux/man-pages/man7/inotify.7.html
 [`kqueue`]: https://www.freebsd.org/cgi/man.cgi?kqueue
 [`FSEvents`]: https://developer.apple.com/library/mac/documentation/Darwin/Conceptual/FSEvents_ProgGuide/Introduction/Introduction.html#//apple_ref/doc/uid/TP40005289-CH1-SW1

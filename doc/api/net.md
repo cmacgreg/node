@@ -1,4 +1,4 @@
-# net
+# Net
 
 > Stability: 2 - Stable
 
@@ -40,8 +40,10 @@ added: v0.1.90
 
 * {Error}
 
-Emitted when an error occurs.  The [`'close'`][] event will be called directly
-following this event.  See example in discussion of `server.listen`.
+Emitted when an error occurs. Unlike [`net.Socket`][], the [`'close'`][]
+event will **not** be emitted directly following this event unless
+[`server.close()`][] is manually called. See the example in discussion of
+[`server.listen()`][`server.listen(port, host, backlog, callback)`].
 
 ### Event: 'listening'
 <!-- YAML
@@ -64,7 +66,7 @@ Returns an object with `port`, `family`, and `address` properties:
 Example:
 
 ```js
-var server = net.createServer((socket) => {
+const server = net.createServer((socket) => {
   socket.end('goodbye\n');
 }).on('error', (err) => {
   // handle errors here
@@ -209,7 +211,7 @@ double-backslashes, such as:
 
 ```js
 net.createServer().listen(
-    path.join('\\\\?\\pipe', process.cwd(), 'myctl'))
+    path.join('\\\\?\\pipe', process.cwd(), 'myctl'));
 ```
 
 The parameter `backlog` behaves the same as in
@@ -332,7 +334,7 @@ Construct a new socket object.
 `fd` allows you to specify the existing file descriptor of socket.
 Set `readable` and/or `writable` to `true` to allow reads and/or writes on this
 socket (NOTE: Works only when `fd` is passed).
-About `allowHalfOpen`, refer to `createServer()` and `'end'` event.
+About `allowHalfOpen`, refer to [`net.createServer()`][] and [`'end'`][] event.
 
 `net.Socket` instances are [`EventEmitter`][] with the following events:
 
@@ -513,7 +515,7 @@ added: v0.1.90
 -->
 
 As [`socket.connect(options[, connectListener])`][`socket.connect(options, connectListener)`],
-with options either as either `{port: port, host: host}` or `{path: path}`.
+with options as either `{port: port, host: host}` or `{path: path}`.
 
 ### socket.connecting
 <!-- YAML
@@ -765,14 +767,15 @@ A factory function, which returns a new [`net.Socket`][] and automatically
 connects with the supplied `options`.
 
 The options are passed to both the [`net.Socket`][] constructor and the
-[`socket.connect`][] method. 
+[`socket.connect`][] method.
 
 Passing `timeout` as an option will call [`socket.setTimeout()`][] after the socket is created, but before it is connecting.
 
 The `connectListener` parameter will be added as a listener for the
 [`'connect'`][] event once.
 
-Here is an example of a client of the previously described echo server:
+Following is an example of a client of the echo server described
+in the [`net.createServer()`][] section:
 
 ```js
 const net = require('net');
@@ -872,8 +875,8 @@ server.listen(8124, () => {
 
 Test this by using `telnet`:
 
-```sh
-telnet localhost 8124
+```console
+$ telnet localhost 8124
 ```
 
 To listen on the socket `/tmp/echo.sock` the third line from the last would
@@ -887,8 +890,8 @@ server.listen('/tmp/echo.sock', () => {
 
 Use `nc` to connect to a UNIX domain socket server:
 
-```js
-nc -U /tmp/echo.sock
+```console
+$ nc -U /tmp/echo.sock
 ```
 
 ## net.isIP(input)
@@ -931,11 +934,13 @@ Returns true if input is a version 6 IP address, otherwise returns false.
 [`dns.lookup()` hints]: dns.html#dns_supported_getaddrinfo_flags
 [`end()`]: #net_socket_end_data_encoding
 [`EventEmitter`]: events.html#events_class_eventemitter
+[`net.createServer()`]: #net_net_createserver_options_connectionlistener
 [`net.Socket`]: #net_class_net_socket
 [`pause()`]: #net_socket_pause
 [`resume()`]: #net_socket_resume
 [`server.getConnections()`]: #net_server_getconnections_callback
 [`server.listen(port, host, backlog, callback)`]: #net_server_listen_port_hostname_backlog_callback
+[`server.close()`]: #net_server_close_callback
 [`socket.connect(options, connectListener)`]: #net_socket_connect_options_connectlistener
 [`socket.connect`]: #net_socket_connect_options_connectlistener
 [`socket.setTimeout()`]: #net_socket_settimeout_timeout_callback

@@ -64,13 +64,18 @@ endif
 # to check for changes.
 .PHONY: $(NODE_EXE) $(NODE_G_EXE)
 
+# The -r/-L check stops it recreating the link if it is already in place,
+# otherwise $(NODE_EXE) being a .PHONY target means it is always re-run.
+# Without the check there is a race condition between the link being deleted
+# and recreated which can break the addons build when running test-ci
+# See comments on the build-addons target for some more info
 $(NODE_EXE): config.gypi out/Makefile
 	$(MAKE) -C out BUILDTYPE=Release V=$(V)
-	ln -fs out/Release/$(NODE_EXE) $@
+	if [ ! -r $@ -o ! -L $@ ]; then ln -fs out/Release/$(NODE_EXE) $@; fi
 
 $(NODE_G_EXE): config.gypi out/Makefile
 	$(MAKE) -C out BUILDTYPE=Debug V=$(V)
-	ln -fs out/Debug/$(NODE_EXE) $@
+	if [ ! -r $@ -o ! -L $@ ]; then ln -fs out/Debug/$(NODE_EXE) $@; fi
 
 out/Makefile: common.gypi deps/uv/uv.gyp deps/http_parser/http_parser.gyp deps/zlib/zlib.gyp deps/v8/build/toolchain.gypi deps/v8/build/features.gypi deps/v8/tools/gyp/v8.gyp node.gyp config.gypi
 	$(PYTHON) tools/gyp_node.py -f make
@@ -85,24 +90,24 @@ uninstall:
 	$(PYTHON) tools/install.py $@ '$(DESTDIR)' '$(PREFIX)'
 
 clean:
-	-rm -rf out/Makefile $(NODE_EXE) $(NODE_G_EXE) out/$(BUILDTYPE)/$(NODE_EXE) \
+	$(RM) -r out/Makefile $(NODE_EXE) $(NODE_G_EXE) out/$(BUILDTYPE)/$(NODE_EXE) \
                 out/$(BUILDTYPE)/node.exp
-	@if [ -d out ]; then find out/ -name '*.o' -o -name '*.a' -o -name '*.d' | xargs rm -rf; fi
-	-rm -rf node_modules
-	@if [ -d deps/icu ]; then echo deleting deps/icu; rm -rf deps/icu; fi
-	-rm -f test.tap
+	@if [ -d out ]; then find out/ -name '*.o' -o -name '*.a' -o -name '*.d' | xargs $(RM) -r; fi
+	$(RM) -r node_modules
+	@if [ -d deps/icu ]; then echo deleting deps/icu; $(RM) -r deps/icu; fi
+	$(RM) test.tap
 
 distclean:
-	-rm -rf out
-	-rm -f config.gypi icu_config.gypi config_fips.gypi
-	-rm -f config.mk
-	-rm -rf $(NODE_EXE) $(NODE_G_EXE)
-	-rm -rf node_modules
-	-rm -rf deps/icu
-	-rm -rf deps/icu4c*.tgz deps/icu4c*.zip deps/icu-tmp
-	-rm -f $(BINARYTAR).* $(TARBALL).*
-	-rm -rf deps/v8/testing/gmock
-	-rm -rf deps/v8/testing/gtest
+	$(RM) -r out
+	$(RM) config.gypi icu_config.gypi config_fips.gypi
+	$(RM) config.mk
+	$(RM) -r $(NODE_EXE) $(NODE_G_EXE)
+	$(RM) -r node_modules
+	$(RM) -r deps/icu
+	$(RM) -r deps/icu4c*.tgz deps/icu4c*.zip deps/icu-tmp
+	$(RM) $(BINARYTAR).* $(TARBALL).*
+	$(RM) -r deps/v8/testing/gmock
+	$(RM) -r deps/v8/testing/gtest
 
 check: test
 
@@ -163,9 +168,10 @@ test/addons/.buildstamp: config.gypi \
 	test/addons/.docbuildstamp
 #	Cannot use $(wildcard test/addons/*/) here, it's evaluated before
 #	embedded addons have been generated from the documentation.
-	for dirname in test/addons/*/; do \
-		echo "\nRunning addons test $$PWD/$$dirname" ; \
-		$(NODE) deps/npm/node_modules/node-gyp/bin/node-gyp --loglevel=$(LOGLEVEL) rebuild \
+	@for dirname in test/addons/*/; do \
+		printf "\nBuilding addon $$PWD/$$dirname\n" ; \
+		env MAKEFLAGS="-j1" $(NODE) deps/npm/node_modules/node-gyp/bin/node-gyp \
+		        --loglevel=$(LOGLEVEL) rebuild \
 			--python="$(PYTHON)" \
 			--directory="$$PWD/$$dirname" \
 			--nodedir="$$PWD" || exit 1 ; \
@@ -206,6 +212,11 @@ test-ci-js:
 	$(PYTHON) tools/test.py $(PARALLEL_ARGS) -p tap --logfile test.tap \
 		--mode=release --flaky-tests=$(FLAKY_TESTS) \
 		$(TEST_CI_ARGS) $(CI_JS_SUITES)
+	# Clean up any leftover processes
+	PS_OUT=`ps awwx | grep Release/node | grep -v grep | awk '{print $$1}'`; \
+	if [ "$${PS_OUT}" ]; then \
+		echo $${PS_OUT} | $(XARGS) kill; exit 1; \
+	fi
 
 test-ci: LOGLEVEL := info
 test-ci: | build-addons
@@ -213,6 +224,11 @@ test-ci: | build-addons
 	$(PYTHON) tools/test.py $(PARALLEL_ARGS) -p tap --logfile test.tap \
 		--mode=release --flaky-tests=$(FLAKY_TESTS) \
 		$(TEST_CI_ARGS) $(CI_NATIVE_SUITES) $(CI_JS_SUITES)
+	# Clean up any leftover processes
+	PS_OUT=`ps awwx | grep Release/node | grep -v grep | awk '{print $$1}'`; \
+	if [ "$${PS_OUT}" ]; then \
+		echo $${PS_OUT} | $(XARGS) kill; exit 1; \
+	fi
 
 test-release: test-build
 	$(PYTHON) tools/test.py --mode=release
@@ -238,6 +254,9 @@ test-debugger: all
 test-inspector: all
 	$(PYTHON) tools/test.py inspector
 
+test-tick-processor: all
+	$(PYTHON) tools/test.py tick-processor
+
 test-known-issues: all
 	$(PYTHON) tools/test.py known_issues
 
@@ -249,6 +268,11 @@ test-npm-publish: $(NODE_EXE)
 
 test-addons: test-build
 	$(PYTHON) tools/test.py --mode=release addons
+
+test-addons-clean:
+	$(RM) -rf test/addons/??_*/
+	$(RM) -rf test/addons/*/build
+	$(RM) test/addons/.buildstamp test/addons/.docbuildstamp
 
 test-timers:
 	$(MAKE) --directory=tools faketime
@@ -289,16 +313,20 @@ test-v8 test-v8-intl test-v8-benchmarks test-v8-all:
 		"$ git clone https://github.com/nodejs/node.git"
 endif
 
+# Google Analytics ID used for tracking API docs page views, empty
+# DOCS_ANALYTICS means no tracking scripts will be included in the
+# generated .html files
+DOCS_ANALYTICS ?=
+
 apidoc_sources = $(wildcard doc/api/*.md)
-apidocs = $(addprefix out/,$(apidoc_sources:.md=.html)) \
-		$(addprefix out/,$(apidoc_sources:.md=.json))
+apidocs_html = $(apidoc_dirs) $(apiassets) $(addprefix out/,$(apidoc_sources:.md=.html))
+apidocs_json = $(apidoc_dirs) $(apiassets) $(addprefix out/,$(apidoc_sources:.md=.json))
 
 apidoc_dirs = out/doc out/doc/api/ out/doc/api/assets
 
 apiassets = $(subst api_assets,api/assets,$(addprefix out/,$(wildcard doc/api_assets/*)))
 
-doc-only: $(apidoc_dirs) $(apiassets) $(apidocs) tools/doc/
-
+doc-only: $(apidocs_html) $(apidocs_json)
 doc: $(NODE_EXE) doc-only
 
 $(apidoc_dirs):
@@ -323,7 +351,8 @@ out/doc/api/%.json: doc/api/%.md
 	[ -x $(NODE) ] && $(NODE) $(gen-json) || node $(gen-json)
 
 # check if ./node is actually set, else use user pre-installed binary
-gen-html = tools/doc/generate.js --node-version=$(FULLVERSION) --format=html --template=doc/template.html $< > $@
+gen-html = tools/doc/generate.js --node-version=$(FULLVERSION) --format=html \
+			--template=doc/template.html --analytics=$(DOCS_ANALYTICS) $< > $@
 out/doc/api/%.html: doc/api/%.md
 	@[ -e tools/doc/node_modules/js-yaml/package.json ] || \
 		[ -e tools/eslint/node_modules/js-yaml/package.json ] || \
@@ -334,11 +363,11 @@ out/doc/api/%.html: doc/api/%.md
 		fi
 	[ -x $(NODE) ] && $(NODE) $(gen-html) || node $(gen-html)
 
-docopen: out/doc/api/all.html
-	-google-chrome out/doc/api/all.html
+docopen: $(apidocs_html)
+	@$(PYTHON) -mwebbrowser file://$(PWD)/out/doc/api/all.html
 
 docclean:
-	-rm -rf out/doc
+	$(RM) -r out/doc
 
 build-ci:
 	$(PYTHON) ./configure $(CONFIG_FLAGS)
@@ -488,7 +517,7 @@ PKGDIR=out/dist-osx
 release-only:
 	@if [ "$(DISTTYPE)" != "nightly" ] && [ "$(DISTTYPE)" != "next-nightly" ] && \
 		`grep -q REPLACEME doc/api/*.md`; then \
-		echo 'Please update Added: tags in the documentation first.' ; \
+		echo 'Please update REPLACEME in Added: tags in doc/api/*.md (See doc/releases.md)' ; \
 		exit 1 ; \
 	fi
 	@if [ "$(shell git status --porcelain | egrep -v '^\?\? ')" = "" ]; then \
@@ -513,8 +542,8 @@ release-only:
 	fi
 
 $(PKG): release-only
-	rm -rf $(PKGDIR)
-	rm -rf out/deps out/Release
+	$(RM) -r $(PKGDIR)
+	$(RM) -r out/deps out/Release
 	$(PYTHON) ./configure \
 		--dest-cpu=x64 \
 		--tag=$(TAG) \
@@ -545,24 +574,24 @@ $(TARBALL): release-only $(NODE_EXE) doc
 	mkdir -p $(TARNAME)/doc/api
 	cp doc/node.1 $(TARNAME)/doc/node.1
 	cp -r out/doc/api/* $(TARNAME)/doc/api/
-	rm -rf $(TARNAME)/deps/v8/{test,samples,tools/profviz,tools/run-tests.py}
-	rm -rf $(TARNAME)/doc/images # too big
-	rm -rf $(TARNAME)/deps/uv/{docs,samples,test}
-	rm -rf $(TARNAME)/deps/openssl/openssl/{doc,demos,test}
-	rm -rf $(TARNAME)/deps/zlib/contrib # too big, unused
-	rm -rf $(TARNAME)/.{editorconfig,git*,mailmap}
-	rm -rf $(TARNAME)/tools/{eslint,eslint-rules,osx-pkg.pmdoc,pkgsrc}
-	rm -rf $(TARNAME)/tools/{osx-*,license-builder.sh,cpplint.py}
-	rm -rf $(TARNAME)/test*.tap
-	find $(TARNAME)/ -name ".eslint*" -maxdepth 2 | xargs rm
-	find $(TARNAME)/ -type l | xargs rm # annoying on windows
+	$(RM) -r $(TARNAME)/deps/v8/{test,samples,tools/profviz,tools/run-tests.py}
+	$(RM) -r $(TARNAME)/doc/images # too big
+	$(RM) -r $(TARNAME)/deps/uv/{docs,samples,test}
+	$(RM) -r $(TARNAME)/deps/openssl/openssl/{doc,demos,test}
+	$(RM) -r $(TARNAME)/deps/zlib/contrib # too big, unused
+	$(RM) -r $(TARNAME)/.{editorconfig,git*,mailmap}
+	$(RM) -r $(TARNAME)/tools/{eslint,eslint-rules,osx-pkg.pmdoc,pkgsrc}
+	$(RM) -r $(TARNAME)/tools/{osx-*,license-builder.sh,cpplint.py}
+	$(RM) -r $(TARNAME)/test*.tap
+	find $(TARNAME)/ -name ".eslint*" -maxdepth 2 | xargs $(RM)
+	find $(TARNAME)/ -type l | xargs $(RM) # annoying on windows
 	tar -cf $(TARNAME).tar $(TARNAME)
-	rm -rf $(TARNAME)
+	$(RM) -r $(TARNAME)
 	gzip -c -f -9 $(TARNAME).tar > $(TARNAME).tar.gz
 ifeq ($(XZ), 0)
 	xz -c -f -$(XZ_COMPRESSION) $(TARNAME).tar > $(TARNAME).tar.xz
 endif
-	rm $(TARNAME).tar
+	$(RM) $(TARNAME).tar
 
 tar: $(TARBALL)
 
@@ -577,7 +606,7 @@ ifeq ($(XZ), 0)
 	ssh $(STAGINGSERVER) "touch nodejs/$(DISTTYPEDIR)/$(FULLVERSION)/node-$(FULLVERSION).tar.xz.done"
 endif
 
-doc-upload: tar
+doc-upload: doc
 	ssh $(STAGINGSERVER) "mkdir -p nodejs/$(DISTTYPEDIR)/$(FULLVERSION)"
 	chmod -R ug=rw-x+X,o=r+X out/doc/
 	scp -pr out/doc/ $(STAGINGSERVER):nodejs/$(DISTTYPEDIR)/$(FULLVERSION)/docs/
@@ -591,14 +620,14 @@ $(TARBALL)-headers: release-only
 		--release-urlbase=$(RELEASE_URLBASE) \
 		$(CONFIG_FLAGS) $(BUILD_RELEASE_FLAGS)
 	HEADERS_ONLY=1 $(PYTHON) tools/install.py install '$(TARNAME)' '/'
-	find $(TARNAME)/ -type l | xargs rm -f
+	find $(TARNAME)/ -type l | xargs $(RM)
 	tar -cf $(TARNAME)-headers.tar $(TARNAME)
-	rm -rf $(TARNAME)
+	$(RM) -r $(TARNAME)
 	gzip -c -f -9 $(TARNAME)-headers.tar > $(TARNAME)-headers.tar.gz
 ifeq ($(XZ), 0)
 	xz -c -f -$(XZ_COMPRESSION) $(TARNAME)-headers.tar > $(TARNAME)-headers.tar.xz
 endif
-	rm $(TARNAME)-headers.tar
+	$(RM) $(TARNAME)-headers.tar
 
 tar-headers: $(TARBALL)-headers
 
@@ -614,8 +643,8 @@ ifeq ($(XZ), 0)
 endif
 
 $(BINARYTAR): release-only
-	rm -rf $(BINARYNAME)
-	rm -rf out/deps out/Release
+	$(RM) -r $(BINARYNAME)
+	$(RM) -r out/deps out/Release
 	$(PYTHON) ./configure \
 		--prefix=/ \
 		--dest-cpu=$(DESTCPU) \
@@ -627,12 +656,12 @@ $(BINARYTAR): release-only
 	cp LICENSE $(BINARYNAME)
 	cp CHANGELOG.md $(BINARYNAME)
 	tar -cf $(BINARYNAME).tar $(BINARYNAME)
-	rm -rf $(BINARYNAME)
+	$(RM) -r $(BINARYNAME)
 	gzip -c -f -9 $(BINARYNAME).tar > $(BINARYNAME).tar.gz
 ifeq ($(XZ), 0)
 	xz -c -f -$(XZ_COMPRESSION) $(BINARYNAME).tar > $(BINARYNAME).tar.xz
 endif
-	rm $(BINARYNAME).tar
+	$(RM) $(BINARYNAME).tar
 
 binary: $(BINARYTAR)
 
@@ -725,6 +754,8 @@ CPPLINT_FILES = $(filter-out $(CPPLINT_EXCLUDE), $(wildcard \
 	src/*.h \
 	test/addons/*/*.cc \
 	test/addons/*/*.h \
+	test/cctest/*.cc \
+	test/cctest/*.h \
 	tools/icu/*.cc \
 	tools/icu/*.h \
 	))
@@ -756,9 +787,11 @@ endif
 
 .PHONY: lint cpplint jslint bench clean docopen docclean doc dist distclean \
 	check uninstall install install-includes install-bin all staticlib \
-	dynamiclib test test-all test-addons build-addons website-upload pkg \
-	blog blogclean tar binary release-only bench-http-simple bench-idle \
-	bench-all bench bench-misc bench-array bench-buffer bench-net \
-	bench-http bench-fs bench-tls cctest run-ci test-v8 test-v8-intl \
-	test-v8-benchmarks test-v8-all v8 lint-ci bench-ci jslint-ci doc-only \
-	$(TARBALL)-headers test-ci test-ci-native test-ci-js build-ci
+	dynamiclib test test-all test-addons test-addons-clean build-addons \
+        website-upload pkg blog blogclean tar binary release-only \
+        bench-http-simple bench-idle bench-all bench bench-misc bench-array \
+        bench-buffer bench-net bench-http bench-fs bench-tls cctest run-ci \
+        test-v8 test-v8-intl test-v8-benchmarks test-v8-all v8 lint-ci \
+        bench-ci jslint-ci doc-only $(TARBALL)-headers test-ci test-ci-native \
+        test-ci-js build-ci
+
