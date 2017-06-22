@@ -15,6 +15,7 @@
     'node_enable_v8_vtunejit%': 'false',
     'node_target_type%': 'executable',
     'node_core_target_name%': 'node',
+    'node_module_version%': '',
     'library_files': [
       'src/node.js',
       'lib/_debug_agent.js',
@@ -168,6 +169,7 @@
         'src/node_http_parser.h',
         'src/node_internals.h',
         'src/node_javascript.h',
+        'src/node_mutex.h',
         'src/node_root_certs.h',
         'src/node_version.h',
         'src/node_watchdog.h',
@@ -209,6 +211,9 @@
 
 
       'conditions': [
+        [ 'node_enable_d8=="true"', {
+          'dependencies': [ 'deps/v8/src/d8.gyp:d8' ],
+        }],
         [ 'node_tag!=""', {
           'defines': [ 'NODE_TAG="<(node_tag)"' ],
         }],
@@ -280,7 +285,9 @@
                   'conditions': [
                     ['OS in "linux freebsd"', {
                       'ldflags': [
-                        '-Wl,--whole-archive <(PRODUCT_DIR)/<(OPENSSL_PRODUCT)',
+                        '-Wl,--whole-archive,'
+                            '<(PRODUCT_DIR)/obj.target/deps/openssl/'
+                            '<(OPENSSL_PRODUCT)',
                         '-Wl,--no-whole-archive',
                       ],
                     }],
