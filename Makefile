@@ -257,6 +257,9 @@ test-inspector: all
 test-tick-processor: all
 	$(PYTHON) tools/test.py tick-processor
 
+test-hash-seed: all
+	$(NODE) test/pummel/test-hash-seed.js
+
 test-known-issues: all
 	$(PYTHON) tools/test.py known_issues
 
@@ -283,7 +286,7 @@ test-timers-clean:
 
 
 ifneq ("","$(wildcard deps/v8/tools/run-tests.py)")
-test-v8: v8
+test-v8: v8 test-hash-seed
 #	note: performs full test unless QUICKCHECK is specified
 	deps/v8/tools/run-tests.py --arch=$(V8_ARCH) \
         --mode=$(BUILDTYPE_LOWER) $(V8_TEST_OPTIONS) $(QUICKCHECK_ARG) \
@@ -735,10 +738,12 @@ bench-idle:
 	$(NODE) benchmark/idle_clients.js &
 
 jslint:
+	@echo "Running JS linter..."
 	$(NODE) tools/eslint/bin/eslint.js --cache --rulesdir=tools/eslint-rules \
 	  benchmark lib test tools
 
 jslint-ci:
+	@echo "Running JS linter..."
 	$(NODE) tools/jslint.js $(PARALLEL_ARGS) -f tap -o test-eslint.tap \
 		benchmark lib test tools
 
@@ -761,11 +766,16 @@ CPPLINT_FILES = $(filter-out $(CPPLINT_EXCLUDE), $(wildcard \
 	))
 
 cpplint:
+	@echo "Running C++ linter..."
 	@$(PYTHON) tools/cpplint.py $(CPPLINT_FILES)
 	@$(PYTHON) tools/check-imports.py
 
 ifneq ("","$(wildcard tools/eslint/lib/eslint.js)")
-lint: jslint cpplint
+lint:
+	@EXIT_STATUS=0 ; \
+	$(MAKE) jslint || EXIT_STATUS=$$? ; \
+	$(MAKE) cpplint || EXIT_STATUS=$$? ; \
+	exit $$EXIT_STATUS
 CONFLICT_RE=^>>>>>>> [0-9A-Fa-f]+|^<<<<<<< [A-Za-z]+
 lint-ci: jslint-ci cpplint
 	@if ! ( grep -IEqrs "$(CONFLICT_RE)" benchmark deps doc lib src test tools ) \
@@ -793,5 +803,5 @@ endif
         bench-buffer bench-net bench-http bench-fs bench-tls cctest run-ci \
         test-v8 test-v8-intl test-v8-benchmarks test-v8-all v8 lint-ci \
         bench-ci jslint-ci doc-only $(TARBALL)-headers test-ci test-ci-native \
-        test-ci-js build-ci
+        test-ci-js build-ci test-hash-seed
 

@@ -1108,7 +1108,7 @@ implement streams using JavaScript's prototypal inheritance model.
 
 First, a stream developer would declare a new JavaScript class that extends one
 of the four basic stream classes (`stream.Writable`, `stream.Readable`,
-`stream.Duplex`, or `stream.Transform`), making sure the call the appropriate
+`stream.Duplex`, or `stream.Transform`), making sure they call the appropriate
 parent class constructor:
 
 ```js
@@ -1548,6 +1548,7 @@ unexpected and inconsistent behavior depending on whether the stream is
 operating in flowing or paused mode. Using the `'error'` event ensures
 consistent and predictable handling of errors.
 
+<!-- eslint-disable no-useless-return -->
 ```js
 const Readable = require('stream').Readable;
 

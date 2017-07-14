@@ -9,7 +9,7 @@ let outstanding_reqs = 0;
 const server = http.createServer(function(req, res) {
   res.writeHead(200, [['content-type', 'text/plain']]);
   res.addTrailers({'x-foo': 'bar'});
-  res.end('stuff' + '\n');
+  res.end('stuff\n');
 });
 server.listen(0);
 
@@ -53,7 +53,7 @@ server.on('listening', function() {
   c.on('connect', function() {
     outstanding_reqs++;
     c.write('GET / HTTP/1.1\r\n\r\n');
-    tid = setTimeout(common.fail, 2000, 'Couldn\'t find last chunk.');
+    tid = setTimeout(common.mustNotCall(), 2000, 'Couldn\'t find last chunk.');
   });
 
   c.on('data', function(chunk) {
