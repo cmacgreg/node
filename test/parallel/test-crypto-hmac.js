@@ -1,11 +1,9 @@
 'use strict';
 const common = require('../common');
-const assert = require('assert');
-
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
+
+const assert = require('assert');
 const crypto = require('crypto');
 
 // Test for binding layer robustness
@@ -377,3 +375,7 @@ for (let i = 0, l = rfc2202_sha1.length; i < l; i++) {
     `Test HMAC-SHA1 : Test case ${i + 1} rfc 2202`
   );
 }
+
+assert.throws(function() {
+  crypto.createHmac('sha256', 'w00t').digest('ucs2');
+}, /^Error: hmac\.digest\(\) does not support UTF-16$/);

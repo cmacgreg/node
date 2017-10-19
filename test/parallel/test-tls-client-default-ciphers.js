@@ -1,11 +1,9 @@
 'use strict';
 const common = require('../common');
-const assert = require('assert');
-
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
+
+const assert = require('assert');
 const tls = require('tls');
 
 function Done() {}
@@ -18,11 +16,8 @@ function test1() {
     throw new Done();
   };
 
-  try {
-    tls.connect(common.PORT);
-  } catch (e) {
-    assert(e instanceof Done);
-  }
+  assert.throws(tls.connect, Done);
+
   assert.strictEqual(ciphers, tls.DEFAULT_CIPHERS);
 }
 test1();

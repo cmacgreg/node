@@ -1,10 +1,9 @@
 'use strict';
 const common = require('../common');
 
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
+
 const tls = require('tls');
 
 
@@ -42,5 +41,5 @@ function test(cert, key, cb) {
 }
 
 test(cert, key, common.mustCall(function() {
-  test(Buffer.from(cert), Buffer.from(key), common.mustCall(function() {}));
+  test(Buffer.from(cert), Buffer.from(key), common.mustCall());
 }));

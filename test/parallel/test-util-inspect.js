@@ -42,8 +42,9 @@ assert.strictEqual(util.inspect({'a': {'b': { 'c': 2}}}, false, 0),
                    '{ a: [Object] }');
 assert.strictEqual(util.inspect({'a': {'b': { 'c': 2}}}, false, 1),
                    '{ a: { b: [Object] } }');
-assert.strictEqual(util.inspect(Object.create({},
-  {visible: {value: 1, enumerable: true}, hidden: {value: 2}})),
+assert.strictEqual(util.inspect(
+  Object.create({},
+                {visible: {value: 1, enumerable: true}, hidden: {value: 2}})),
                    '{ visible: 1 }'
 );
 
@@ -137,14 +138,14 @@ for (const showHidden of [true, false]) {
   Uint32Array,
   Uint8Array,
   Uint8ClampedArray ].forEach((constructor) => {
-    const length = 2;
-    const byteLength = length * constructor.BYTES_PER_ELEMENT;
-    const array = new constructor(new ArrayBuffer(byteLength), 0, length);
-    array[0] = 65;
-    array[1] = 97;
-    assert.strictEqual(
-      util.inspect(array, true),
-      `${constructor.name} [\n` +
+  const length = 2;
+  const byteLength = length * constructor.BYTES_PER_ELEMENT;
+  const array = new constructor(new ArrayBuffer(byteLength), 0, length);
+  array[0] = 65;
+  array[1] = 97;
+  assert.strictEqual(
+    util.inspect(array, true),
+    `${constructor.name} [\n` +
       '  65,\n' +
       '  97,\n' +
       `  [BYTES_PER_ELEMENT]: ${constructor.BYTES_PER_ELEMENT},\n` +
@@ -152,11 +153,11 @@ for (const showHidden of [true, false]) {
       `  [byteLength]: ${byteLength},\n` +
       '  [byteOffset]: 0,\n' +
       `  [buffer]: ArrayBuffer { byteLength: ${byteLength} } ]`);
-    assert.strictEqual(
-      util.inspect(array, false),
-      `${constructor.name} [ 65, 97 ]`
-    );
-  });
+  assert.strictEqual(
+    util.inspect(array, false),
+    `${constructor.name} [ 65, 97 ]`
+  );
+});
 
 // Now check that declaring a TypedArray in a different context works the same
 [ Float32Array,
@@ -168,17 +169,17 @@ for (const showHidden of [true, false]) {
   Uint32Array,
   Uint8Array,
   Uint8ClampedArray ].forEach((constructor) => {
-    const length = 2;
-    const byteLength = length * constructor.BYTES_PER_ELEMENT;
-    const array = vm.runInNewContext(
-      'new constructor(new ArrayBuffer(byteLength), 0, length)',
-      { constructor, byteLength, length }
-    );
-    array[0] = 65;
-    array[1] = 97;
-    assert.strictEqual(
-      util.inspect(array, true),
-      `${constructor.name} [\n` +
+  const length = 2;
+  const byteLength = length * constructor.BYTES_PER_ELEMENT;
+  const array = vm.runInNewContext(
+    'new constructor(new ArrayBuffer(byteLength), 0, length)',
+    { constructor, byteLength, length }
+  );
+  array[0] = 65;
+  array[1] = 97;
+  assert.strictEqual(
+    util.inspect(array, true),
+    `${constructor.name} [\n` +
       '  65,\n' +
       '  97,\n' +
       `  [BYTES_PER_ELEMENT]: ${constructor.BYTES_PER_ELEMENT},\n` +
@@ -186,19 +187,25 @@ for (const showHidden of [true, false]) {
       `  [byteLength]: ${byteLength},\n` +
       '  [byteOffset]: 0,\n' +
       `  [buffer]: ArrayBuffer { byteLength: ${byteLength} } ]`);
-    assert.strictEqual(
-      util.inspect(array, false),
-      `${constructor.name} [ 65, 97 ]`
-    );
-  });
+  assert.strictEqual(
+    util.inspect(array, false),
+    `${constructor.name} [ 65, 97 ]`
+  );
+});
 
 // Due to the hash seed randomization it's not deterministic the order that
 // the following ways this hash is displayed.
 // See http://codereview.chromium.org/9124004/
 
 {
-  const out = util.inspect(Object.create({},
-      {visible: {value: 1, enumerable: true}, hidden: {value: 2}}), true);
+  const out =
+    util.inspect(
+      Object.create(
+        {},
+        {visible: {value: 1, enumerable: true}, hidden: {value: 2}}
+      ),
+      true
+    );
   if (out !== '{ [hidden]: 2, visible: 1 }' &&
       out !== '{ visible: 1, [hidden]: 2 }') {
     common.fail(`unexpected value for out ${out}`);
@@ -252,9 +259,11 @@ Object.defineProperty(
 assert.strictEqual(util.inspect(value), '[ 1, 2, 3, growingLength: [Getter] ]');
 
 // Function with properties
-value = function() {};
-value.aprop = 42;
-assert.strictEqual(util.inspect(value), '{ [Function: value] aprop: 42 }');
+{
+  const value = () => {};
+  value.aprop = 42;
+  assert.strictEqual(util.inspect(value), '{ [Function: value] aprop: 42 }');
+}
 
 // Anonymous function with properties
 value = (() => function() {})();
@@ -441,8 +450,7 @@ function test_color_style(style, input, implicit) {
 
   const without_color = util.inspect(input, false, 0, false);
   const with_color = util.inspect(input, false, 0, true);
-  const expect = '\u001b[' + color[0] + 'm' + without_color +
-                 '\u001b[' + color[1] + 'm';
+  const expect = `\u001b[${color[0]}m${without_color}\u001b[${color[1]}m`;
   assert.strictEqual(
     with_color,
     expect,
@@ -595,9 +603,7 @@ assert.doesNotThrow(function() {
 
 // util.inspect with "colors" option should produce as many lines as without it
 function test_lines(input) {
-  const count_lines = function(str) {
-    return (str.match(/\n/g) || []).length;
-  };
+  const count_lines = (str) => (str.match(/\n/g) || []).length;
 
   const without_color = util.inspect(input);
   const with_color = util.inspect(input, {colors: true});
@@ -747,9 +753,10 @@ assert.strictEqual(util.inspect(keys), 'SetIterator { 1, 3 }');
 
 function checkAlignment(container) {
   const lines = util.inspect(container).split('\n');
+  const numRE = /\d/;
   let pos;
   lines.forEach(function(line) {
-    const npos = line.search(/\d/);
+    const npos = line.search(numRE);
     if (npos !== -1) {
       if (pos !== undefined)
         assert.strictEqual(pos, npos, 'container items not aligned');
@@ -793,7 +800,7 @@ checkAlignment(new Map(big_array.map(function(y) { return [y, null]; })));
                      'SetSubclass { 1, 2, 3 }');
   assert.strictEqual(util.inspect(new MapSubclass([['foo', 42]])),
                      'MapSubclass { \'foo\' => 42 }');
-  assert.strictEqual(util.inspect(new PromiseSubclass(function() {})),
+  assert.strictEqual(util.inspect(new PromiseSubclass(() => {})),
                      'PromiseSubclass { <pending> }');
 }
 
@@ -840,7 +847,7 @@ checkAlignment(new Map(big_array.map(function(y) { return [y, null]; })));
 {
   const x = Array(101);
   assert(/^\[ ... 101 more items ]$/.test(
-      util.inspect(x, {maxArrayLength: 0})));
+    util.inspect(x, {maxArrayLength: 0})));
 }
 
 {
@@ -856,7 +863,7 @@ checkAlignment(new Map(big_array.map(function(y) { return [y, null]; })));
 {
   const x = new Uint8Array(101);
   assert(/\[ ... 101 more items ]$/.test(
-      util.inspect(x, {maxArrayLength: 0})));
+    util.inspect(x, {maxArrayLength: 0})));
 }
 
 {

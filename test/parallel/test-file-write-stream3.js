@@ -23,9 +23,9 @@ process.on('exit', function() {
     console.log('  Test callback events missing or out of order:');
     console.log('    expected: %j', cb_expected);
     console.log('    occurred: %j', cb_occurred);
-    assert.strictEqual(cb_occurred, cb_expected,
-                       'events missing or out of order: "' +
-                       cb_occurred + '" !== "' + cb_expected + '"');
+    assert.strictEqual(
+      cb_occurred, cb_expected,
+      `events missing or out of order: "${cb_occurred}" !== "${cb_expected}"`);
   }
 });
 
@@ -156,10 +156,10 @@ function run_test_3() {
 const run_test_4 = common.mustCall(function() {
   //  Error: start must be >= zero
   assert.throws(
-      function() {
-        fs.createWriteStream(filepath, { start: -5, flags: 'r+' });
-      },
-      /"start" must be/
+    function() {
+      fs.createWriteStream(filepath, { start: -5, flags: 'r+' });
+    },
+    /"start" must be/
   );
 });
 

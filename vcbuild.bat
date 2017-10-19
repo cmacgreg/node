@@ -27,6 +27,7 @@ set msi=
 set upload=
 set licensertf=
 set jslint=
+set cpplint=
 set buildnodeweak=
 set noetw=
 set noetw_msi_arg=
@@ -39,6 +40,7 @@ set enable_vtune_arg=
 set configure_flags=
 set build_addons=
 set dll=
+set enable_static=
 
 :next-arg
 if "%1"=="" goto args-done
@@ -56,8 +58,8 @@ if /i "%1"=="nosnapshot"    set nosnapshot=1&goto arg-ok
 if /i "%1"=="noetw"         set noetw=1&goto arg-ok
 if /i "%1"=="noperfctr"     set noperfctr=1&goto arg-ok
 if /i "%1"=="licensertf"    set licensertf=1&goto arg-ok
-if /i "%1"=="test"          set test_args=%test_args% addons doctool known_issues message parallel sequential -J&set jslint=1&set build_addons=1&goto arg-ok
-if /i "%1"=="test-ci"       set test_args=%test_args% %test_ci_args% -p tap --logfile test.tap addons doctool inspector known_issues message sequential parallel&set cctest_args=%cctest_args% --gtest_output=tap:cctest.tap&set build_addons=1&goto arg-ok
+if /i "%1"=="test"          set test_args=%test_args% doctool known_issues message parallel sequential addons -J&set cpplint=1&set jslint=1&set build_addons=1&goto arg-ok
+if /i "%1"=="test-ci"       set test_args=%test_args% %test_ci_args% -p tap --logfile test.tap doctool inspector known_issues message sequential parallel addons&set cctest_args=%cctest_args% --gtest_output=tap:cctest.tap&set build_addons=1&goto arg-ok
 if /i "%1"=="test-addons"   set test_args=%test_args% addons&set build_addons=1&goto arg-ok
 if /i "%1"=="test-simple"   set test_args=%test_args% sequential parallel -J&goto arg-ok
 if /i "%1"=="test-message"  set test_args=%test_args% message&goto arg-ok
@@ -66,10 +68,13 @@ if /i "%1"=="test-inspector" set test_args=%test_args% inspector&goto arg-ok
 if /i "%1"=="test-tick-processor" set test_args=%test_args% tick-processor&goto arg-ok
 if /i "%1"=="test-internet" set test_args=%test_args% internet&goto arg-ok
 if /i "%1"=="test-pummel"   set test_args=%test_args% pummel&goto arg-ok
-if /i "%1"=="test-all"      set test_args=%test_args% sequential parallel message gc inspector internet pummel&set buildnodeweak=1&set jslint=1&goto arg-ok
+if /i "%1"=="test-all"      set test_args=%test_args% sequential parallel message gc inspector internet pummel&set buildnodeweak=1&set cpplint=1&set jslint=1&goto arg-ok
 if /i "%1"=="test-known-issues" set test_args=%test_args% known_issues&goto arg-ok
 if /i "%1"=="jslint"        set jslint=1&goto arg-ok
 if /i "%1"=="jslint-ci"     set jslint_ci=1&goto arg-ok
+if /i "%1"=="cpplint"       set cpplint=1&goto arg-ok
+if /i "%1"=="lint"          set cpplint=1&set jslint=1&goto arg-ok
+if /i "%1"=="lint-ci"       set cpplint=1&set jslint_ci=1&goto arg-ok
 if /i "%1"=="package"       set package=1&goto arg-ok
 if /i "%1"=="msi"           set msi=1&set licensertf=1&set download_arg="--download=all"&set i18n_arg=small-icu&goto arg-ok
 if /i "%1"=="build-release" set build_release=1&goto arg-ok
@@ -82,6 +87,7 @@ if /i "%1"=="download-all"  set download_arg="--download=all"&goto arg-ok
 if /i "%1"=="ignore-flaky"  set test_args=%test_args% --flaky-tests=dontcare&goto arg-ok
 if /i "%1"=="enable-vtune"  set enable_vtune_arg=1&goto arg-ok
 if /i "%1"=="dll"           set dll=1&goto arg-ok
+if /i "%1"=="static"           set enable_static=1&goto arg-ok
 
 echo Error: invalid command line option `%1`.
 exit /b 1
@@ -113,6 +119,7 @@ if defined release_urlbase set configure_flags=%configure_flags% --release-urlba
 if defined download_arg set configure_flags=%configure_flags% %download_arg%
 if defined enable_vtune_arg set configure_flags=%configure_flags% --enable-vtune-profiling
 if defined dll set configure_flags=%configure_flags% --shared
+if defined enable_static set configure_flags=%configure_flags% --enable-static
 
 if "%i18n_arg%"=="full-icu" set configure_flags=%configure_flags% --with-intl=full-icu
 if "%i18n_arg%"=="small-icu" set configure_flags=%configure_flags% --with-intl=small-icu
@@ -171,8 +178,7 @@ goto run
 if defined noprojgen goto msbuild
 
 @rem Generate the VS project.
-echo configure %configure_flags% --dest-cpu=%target_arch% --tag=%TAG%
-python configure %configure_flags% --dest-cpu=%target_arch% --tag=%TAG%
+call :run-python configure %configure_flags% --dest-cpu=%target_arch% --tag=%TAG%
 if errorlevel 1 goto create-msvs-files-failed
 if not exist node.sln goto create-msvs-files-failed
 echo Project files generated.
@@ -321,50 +327,94 @@ for /d %%F in (test\addons\??_*) do (
 "%node_exe%" tools\doc\addon-verify.js
 if %errorlevel% neq 0 exit /b %errorlevel%
 :: building addons
-SetLocal EnableDelayedExpansion
+setlocal EnableDelayedExpansion
 for /d %%F in (test\addons\*) do (
   "%node_exe%" deps\npm\node_modules\node-gyp\bin\node-gyp rebuild ^
     --directory="%%F" ^
     --nodedir="%cd%"
   if !errorlevel! neq 0 exit /b !errorlevel!
 )
-EndLocal
+endlocal
 goto run-tests
 
 :run-tests
-if "%test_args%"=="" goto jslint
+if "%test_args%"=="" goto cpplint
 if "%config%"=="Debug" set test_args=--mode=debug %test_args%
 if "%config%"=="Release" set test_args=--mode=release %test_args%
 echo running 'cctest %cctest_args%'
 "%config%\cctest" %cctest_args%
-echo running 'python tools\test.py %test_args%'
-python tools\test.py %test_args%
+call :run-python tools\test.py %test_args%
+goto cpplint
+
+:cpplint
+if not defined cpplint goto jslint
+call :run-cpplint src\*.c src\*.cc src\*.h test\addons\*.cc test\addons\*.h test\cctest\*.cc test\cctest\*.h tools\icu\*.cc tools\icu\*.h
+call :run-python tools/check-imports.py
 goto jslint
+
+:run-cpplint
+if "%*"=="" goto exit
+echo running cpplint '%*'
+set cppfilelist=
+setlocal enabledelayedexpansion
+for /f "tokens=*" %%G in ('dir /b /s /a %*') do (
+  set relpath=%%G
+  set relpath=!relpath:*%~dp0=!
+  call :add-to-list !relpath!
+)
+( endlocal
+  set cppfilelist=%localcppfilelist%
+)
+call :run-python tools/cpplint.py %cppfilelist%
+goto exit
+
+:add-to-list
+echo %1 | findstr /c:"src\node_root_certs.h"
+if %errorlevel% equ 0 goto exit
+
+echo %1 | findstr /c:"src\queue.h"
+if %errorlevel% equ 0 goto exit
+
+echo %1 | findstr /c:"src\tree.h"
+if %errorlevel% equ 0 goto exit
+
+@rem skip subfolders under /src
+echo %1 | findstr /r /c:"src\\.*\\.*"
+if %errorlevel% equ 0 goto exit
+
+echo %1 | findstr /r /c:"test\\addons\\[0-9].*_.*\.h"
+if %errorlevel% equ 0 goto exit
+
+echo %1 | findstr /r /c:"test\\addons\\[0-9].*_.*\.cc"
+if %errorlevel% equ 0 goto exit
+
+set "localcppfilelist=%localcppfilelist% %1"
+goto exit
 
 :jslint
 if defined jslint_ci goto jslint-ci
 if not defined jslint goto exit
-if not exist tools\eslint\lib\eslint.js goto no-lint
+if not exist tools\eslint\bin\eslint.js goto no-lint
 echo running jslint
-%config%\node tools\eslint\bin\eslint.js --cache --rule "linebreak-style: 0" --rulesdir=tools\eslint-rules benchmark lib test tools
+%config%\node tools\eslint\bin\eslint.js --cache --rule "linebreak-style: 0" --rulesdir=tools\eslint-rules --ext=.js,.md benchmark doc lib test tools
 goto exit
 
 :jslint-ci
 echo running jslint-ci
-%config%\node tools\jslint.js -J -f tap -o test-eslint.tap benchmark lib test tools
+%config%\node tools\jslint.js -J -f tap -o test-eslint.tap benchmark doc lib test tools
 goto exit
 
 :no-lint
 echo Linting is not available through the source tarball.
 echo Use the git repo instead: $ git clone https://github.com/nodejs/node.git
-goto exit
+exit /b 1
 
 :create-msvs-files-failed
 echo Failed to create vc project files.
 goto exit
 
 :help
-echo vcbuild.bat [debug/release] [msi] [test-all/test-uv/test-inspector/test-internet/test-pummel/test-simple/test-message] [clean] [noprojgen] [small-icu/full-icu/without-intl] [nobuild] [nosign] [x86/x64] [vc2015] [download-all] [enable-vtune]
+echo vcbuild.bat [debug/release] [msi] [test-all/test-uv/test-inspector/test-internet/test-pummel/test-simple/test-message] [clean] [noprojgen] [small-icu/full-icu/without-intl] [nobuild] [nosign] [x86/x64] [vc2015] [download-all] [enable-vtune] [lint/lint-ci]
 echo Examples:
 echo   vcbuild.bat                : builds release build
 echo   vcbuild.bat debug          : builds debug build
@@ -373,6 +423,14 @@ echo   vcbuild.bat test           : builds debug build and runs tests
 echo   vcbuild.bat build-release  : builds the release distribution as used by nodejs.org
 echo   vcbuild.bat enable-vtune   : builds nodejs with Intel VTune profiling support to profile JavaScript
 goto exit
+
+:run-python
+call tools\msvs\find_python.cmd
+if errorlevel 1 echo Could not find python2 & goto :exit
+set cmd1="%VCBUILD_PYTHON_LOCATION%" %*
+echo %cmd1%
+%cmd1%
+exit /b %ERRORLEVEL%
 
 :exit
 goto :EOF
@@ -385,8 +443,9 @@ rem ***************
 set NODE_VERSION=
 set TAG=
 set FULLVERSION=
-
-for /F "usebackq tokens=*" %%i in (`python "%~dp0tools\getnodeversion.py"`) do set NODE_VERSION=%%i
+:: Call as subroutine for validation of python
+call :run-python tools\getnodeversion.py > nul
+for /F "tokens=*" %%i in ('"%VCBUILD_PYTHON_LOCATION%" tools\getnodeversion.py') do set NODE_VERSION=%%i
 if not defined NODE_VERSION (
   echo Cannot determine current version of Node.js
   exit /b 1
@@ -395,7 +454,7 @@ if not defined NODE_VERSION (
 if not defined DISTTYPE set DISTTYPE=release
 if "%DISTTYPE%"=="release" (
   set FULLVERSION=%NODE_VERSION%
-  goto exit
+  goto distexit
 )
 if "%DISTTYPE%"=="custom" (
   if not defined CUSTOMTAG (
@@ -423,6 +482,6 @@ if not "%DISTTYPE%"=="custom" (
 )
 set FULLVERSION=%NODE_VERSION%-%TAG%
 
-:exit
+:distexit
 if not defined DISTTYPEDIR set DISTTYPEDIR=%DISTTYPE%
 goto :EOF

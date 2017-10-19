@@ -1,5 +1,4 @@
 'use strict';
-require('../common');
 const common = require('../common');
 const assert = require('assert');
 const domain = require('domain');
@@ -22,7 +21,7 @@ function err() {
   function err2() {
     // this timeout should never be called, since the domain gets
     // disposed when the error happens.
-    setTimeout(common.mustCall(() => {}, 0), 1);
+    setTimeout(common.mustNotCall(), 1);
 
     // this function doesn't exist, and throws an error as a result.
     err3(); // eslint-disable-line no-undef

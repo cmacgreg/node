@@ -10,15 +10,15 @@ function checkListResponse(err, response) {
   assert.strictEqual(1, response.length);
   assert.ok(response[0]['devtoolsFrontendUrl']);
   assert.ok(
-    response[0]['webSocketDebuggerUrl']
-      .match(/ws:\/\/127.0.0.1:\d+\/[0-9A-Fa-f]{8}-/));
+    /ws:\/\/127.0.0.1:\d+\/[0-9A-Fa-f]{8}-/
+      .test(response[0]['webSocketDebuggerUrl']));
 }
 
 function checkVersion(err, response) {
   assert.ifError(err);
   assert.ok(response);
   const expected = {
-    'Browser': 'node.js/' + process.version,
+    'Browser': `node.js/${process.version}`,
     'Protocol-Version': '1.1',
   };
   assert.strictEqual(JSON.stringify(response),
@@ -34,8 +34,8 @@ function checkBadPath(err, response) {
 function expectMainScriptSource(result) {
   const expected = helper.mainScriptSource();
   const source = result['scriptSource'];
-  assert(source && (source.indexOf(expected) >= 0),
-         'Script source is wrong: ' + source);
+  assert(source && (source.includes(expected)),
+         `Script source is wrong: ${source}`);
 }
 
 function setupExpectBreakOnLine(line, url, session, scopeIdCallback) {
@@ -112,17 +112,17 @@ function testBreakpointOnStart(session) {
 function testSetBreakpointAndResume(session) {
   console.log('[test]', 'Setting a breakpoint and verifying it is hit');
   const commands = [
-      { 'method': 'Debugger.setBreakpointByUrl',
-        'params': { 'lineNumber': 5,
-                    'url': session.mainScriptPath,
-                    'columnNumber': 0,
-                    'condition': ''
-        }
-      },
-      { 'method': 'Debugger.resume'},
-      [ { 'method': 'Debugger.getScriptSource',
-          'params': { 'scriptId': session.mainScriptId } },
-        expectMainScriptSource ],
+    { 'method': 'Debugger.setBreakpointByUrl',
+      'params': { 'lineNumber': 5,
+                  'url': session.mainScriptPath,
+                  'columnNumber': 0,
+                  'condition': ''
+      }
+    },
+    { 'method': 'Debugger.resume'},
+    [ { 'method': 'Debugger.getScriptSource',
+        'params': { 'scriptId': session.mainScriptId } },
+      expectMainScriptSource ],
   ];
   session
     .sendInspectorCommands(commands)

@@ -49,7 +49,7 @@ function parent() {
   const node = process.execPath;
 
   const s = spawn(node, [__filename, 'server'], {
-    env: Object.assign(process.env, {
+    env: Object.assign({}, process.env, {
       NODE_DEBUG: 'net'
     })
   });
@@ -71,7 +71,7 @@ function parent() {
     inp.on('data', function(c) {
       c = c.trim();
       if (!c) return;
-      out.write(w + c.split('\n').join('\n' + w) + '\n');
+      out.write(`${w}${c.split('\n').join(`\n${w}`)}\n`);
     });
   }
 }

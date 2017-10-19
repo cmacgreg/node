@@ -2,13 +2,10 @@
 
 const common = require('../common');
 
-let crypto;
-try {
-  crypto = require('crypto');
-} catch (e) {
+if (!common.hasCrypto)
   common.skip('node compiled without OpenSSL.');
-  return;
-}
+
+const crypto = require('crypto');
 
 // Pollution of global is intentional as part of test.
 common.globalCheck = false;
@@ -17,7 +14,7 @@ global.domain = require('domain');
 
 // should not throw a 'TypeError: undefined is not a function' exception
 crypto.randomBytes(8);
-crypto.randomBytes(8, function() {});
+crypto.randomBytes(8, common.mustCall());
 crypto.pseudoRandomBytes(8);
-crypto.pseudoRandomBytes(8, function() {});
-crypto.pbkdf2('password', 'salt', 8, 8, function() {});
+crypto.pseudoRandomBytes(8, common.mustCall());
+crypto.pbkdf2('password', 'salt', 8, 8, 'sha1', common.mustCall());

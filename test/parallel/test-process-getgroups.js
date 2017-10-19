@@ -3,10 +3,9 @@ const common = require('../common');
 
 // Check `id -G` and `process.getgroups()` return same groups.
 
-if (common.isOSX) {
+if (common.isOSX)
   common.skip('Output of `id -G` is unreliable on Darwin.');
-  return;
-}
+
 const assert = require('assert');
 const exec = require('child_process').exec;
 
@@ -24,7 +23,7 @@ if (typeof process.getgroups === 'function') {
 }
 
 function check(a, b) {
-  for (let i = 0; i < a.length; ++i) assert.notStrictEqual(b.indexOf(a[i]), -1);
+  for (let i = 0; i < a.length; ++i) assert(b.includes(a[i]));
 }
 
 function unique(groups) {

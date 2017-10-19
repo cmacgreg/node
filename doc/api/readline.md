@@ -1,5 +1,7 @@
 # Readline
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `readline` module provides an interface for reading data from a [Readable][]
@@ -158,7 +160,7 @@ For example:
 
 ```js
 rl.on('SIGINT', () => {
-  rl.question('Are you sure you want to exit?', (answer) => {
+  rl.question('Are you sure you want to exit? ', (answer) => {
     if (answer.match(/^y(es)?$/i)) rl.pause();
   });
 });
@@ -237,7 +239,7 @@ If the `readline.Interface` was created with `output` set to `null` or
 added: v0.3.3
 -->
 
-* `query` {String} A statement or query to write to `output`, prepended to the
+* `query` {string} A statement or query to write to `output`, prepended to the
   prompt.
 * `callback` {Function} A callback function that is invoked with the user's
   input in response to the `query`.
@@ -255,7 +257,7 @@ If the `readline.Interface` was created with `output` set to `null` or
 Example usage:
 
 ```js
-rl.question('What is your favorite food?', (answer) => {
+rl.question('What is your favorite food? ', (answer) => {
   console.log(`Oh, so your favorite food is ${answer}`);
 });
 ```
@@ -276,7 +278,7 @@ The `rl.resume()` method resumes the `input` stream if it has been paused.
 added: v0.1.98
 -->
 
-* `prompt` {String}
+* `prompt` {string}
 
 The `rl.setPrompt()` method sets the prompt that will be written to `output`
 whenever `rl.prompt()` is called.
@@ -286,12 +288,12 @@ whenever `rl.prompt()` is called.
 added: v0.1.98
 -->
 
-* `data` {String}
+* `data` {string}
 * `key` {Object}
   * `ctrl` {boolean} `true` to indicate the `<ctrl>` key.
   * `meta` {boolean} `true` to indicate the `<Meta>` key.
   * `shift` {boolean} `true` to indicate the `<Shift>` key.
-  * `name` {String} The name of the a key.
+  * `name` {string} The name of the a key.
 
 The `rl.write()` method will write either `data` or a key sequence  identified
 by `key` to the `output`. The `key` argument is supported only if `output` is
@@ -362,7 +364,9 @@ added: v0.1.98
   * `crlfDelay` {number} If the delay between `\r` and `\n` exceeds
     `crlfDelay` milliseconds, both `\r` and `\n` will be treated as separate
     end-of-line input. Default to `100` milliseconds.
-    `crlfDelay` will be coerced to `[100, 2000]` range.
+    `crlfDelay` will be coerced to a number no less than `100`. It can be set to
+    `Infinity`, in which case `\r` followed by `\n` will always be considered a
+    single newline.
   * `removeHistoryDuplicates` {boolean} If `true`, when a new input line added
     to the history list duplicates an older one, this removes the older line
     from the list. Defaults to `false`.
@@ -407,7 +411,7 @@ For instance: `[[substr1, substr2, ...], originalsubstring]`.
 ```js
 function completer(line) {
   const completions = '.help .error .exit .quit .q'.split(' ');
-  const hits = completions.filter((c) => { return c.indexOf(line) === 0 });
+  const hits = completions.filter((c) => c.startsWith(line));
   // show all completions if none found
   return [hits.length ? hits : completions, line];
 }
@@ -450,6 +454,10 @@ autocompletion is disabled when copy-pasted input is detected.
 
 If the `stream` is a [TTY][], then it must be in raw mode.
 
+*Note*: This is automatically called by any readline instance on its `input`
+if the `input` is a terminal. Closing the `readline` instance does not stop
+the `input` from emitting `'keypress'` events.
+
 ```js
 readline.emitKeypressEvents(process.stdin);
 if (process.stdin.isTTY)
@@ -463,7 +471,7 @@ added: v0.7.7
 
 * `stream` {Writable}
 * `dx` {number}
-* `dy` {Number}
+* `dy` {number}
 
 The `readline.moveCursor()` method moves the cursor *relative* to its current
 position in a given [TTY][] `stream`.
@@ -485,7 +493,7 @@ const rl = readline.createInterface({
 rl.prompt();
 
 rl.on('line', (line) => {
-  switch(line.trim()) {
+  switch (line.trim()) {
     case 'hello':
       console.log('world!');
       break;

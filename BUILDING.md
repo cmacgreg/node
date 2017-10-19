@@ -26,13 +26,16 @@ Support is divided into three tiers:
   the broader community.
 * **Tier 2**: Full test coverage but more limited maintenance,
   often provided by the vendor of the platform.
-* **Experimental**: Known to compile but not necessarily reliably or with
-  a full passing test suite. These are often working to be promoted to Tier
-  2 but are not quite ready. There is at least one individual actively
-  providing maintenance and the team is striving to broaden quality and
-  reliability of support.
+* **Experimental**: May not compile reliably or test suite may not pass.
+  These are often working to be promoted to Tier 2 but are not quite ready.
+  There is at least one individual actively providing maintenance and the team
+  is striving to broaden quality and reliability of support.
 
 ### Supported platforms
+
+The community does not build or test against end of life distributions (EoL).
+Thus we do not recommend that you use Node on end of life or unsupported platforms
+in production.
 
 |  System      | Support type | Version                          | Architectures        | Notes            |
 |--------------|--------------|----------------------------------|----------------------|------------------|
@@ -63,8 +66,8 @@ Depending on host platform, the selection of toolchains may vary.
 
 #### Unix
 
-* GCC 4.8 or newer
-* Clang 3.4 or newer
+* GCC 4.8.5 or newer
+* Clang 3.4.2 or newer
 
 #### Windows
 
@@ -79,24 +82,25 @@ Depending on host platform, the selection of toolchains may vary.
 Prerequisites:
 
 * `gcc` and `g++` 4.8.5 or newer, or
-* `clang` and `clang++` 3.4 or newer
+* `clang` and `clang++` 3.4.2 or newer
 * Python 2.6 or 2.7
 * GNU Make 3.81 or newer
 
-On macOS, you will also need:
-* [Xcode](https://developer.apple.com/xcode/download/)
-  - You also need to install the `Command Line Tools` via Xcode. You can find
-    this under the menu `Xcode -> Preferences -> Downloads`
-  - This step will install `gcc` and the related toolchain containing `make`
-
-* After building, you may want to setup [firewall rules](tools/macosx-firewall.sh)
+On macOS you will need to install the `Xcode Command Line Tools` by running
+`xcode-select --install`. Alternatively, if you already have the full Xcode
+installed, you can find them under the menu `Xcode -> Open Developer Tool ->
+More Developer Tools...`. This step will install `clang`, `clang++`, and
+`make`.
+* You may want to setup [firewall rules](tools/macosx-firewall.sh)
 to avoid popups asking to accept incoming network connections when running tests:
+
+If the path to your build directory contains a space, the build will likely fail.
 
 ```console
 $ sudo ./tools/macosx-firewall.sh
 ```
 Running this script will add rules for the executable `node` in the out
-directory and the symbolic `node` link in the projects root directory.
+directory and the symbolic `node` link in the project's root directory.
 
 On FreeBSD and OpenBSD, you may also need:
 * libexecinfo
@@ -121,17 +125,27 @@ and not a newer version.
 
 To run the tests:
 
-```console
+```
 $ make test
 ```
 
-To run the npm test suite:
-
-*note: to run the suite on node v4 or earlier you must first*
-*run `make install`*
+To run the tests and generate code coverage reports:
 
 ```console
-$ make test-npm
+$ ./configure --coverage
+$ make coverage
+```
+
+This will generate coverage reports for both JavaScript and C++ tests (if you
+only want to run the JavaScript tests then you do not need to run the first
+command `./configure --coverage`).
+
+The `make coverage` command downloads some tools to the project root directory
+and overwrites the `lib/` directory. To clean up after generating the coverage
+reports:
+
+```console
+make coverage-clean
 ```
 
 To build the documentation:
@@ -142,7 +156,7 @@ This will build Node.js first (if necessary) and then use it to build the docs:
 $ make doc
 ```
 
-If you have an existing Node.js you can build just the docs with:
+If you have an existing Node.js build, you can build just the docs with:
 
 ```console
 $ NODE=/path/to/node make doc-only
@@ -181,6 +195,8 @@ Prerequisites:
   [Git for Windows](http://git-scm.com/download/win) includes Git Bash
   and tools which can be included in the global `PATH`.
 
+If the path to your build directory contains a space, the build will likely fail.
+
 ```console
 > .\vcbuild nosign
 ```
@@ -206,9 +222,9 @@ in the current continuous integration environment. The participation of people
 dedicated and determined to improve Android building, testing, and support is
 encouraged.
 
-Be sure you have downloaded and extracted [Android NDK]
-(https://developer.android.com/tools/sdk/ndk/index.html)
-before in a folder. Then run:
+Be sure you have downloaded and extracted
+[Android NDK](https://developer.android.com/tools/sdk/ndk/index.html) before in
+a folder. Then run:
 
 ```console
 $ ./android-configure /path/to/your/android-ndk
@@ -350,6 +366,6 @@ and [user guide](https://openssl.org/docs/fips/UserGuide-2.0.pdf).
 6. Get into Node.js checkout folder
 7. `./configure --openssl-fips=/path/to/openssl-fips/installdir`
    For example on ubuntu 12 the installation directory was
-   /usr/local/ssl/fips-2.0
+   `/usr/local/ssl/fips-2.0`
 8. Build Node.js with `make -j`
-9. Verify with `node -p "process.versions.openssl"` (`1.0.2a-fips`)
+9. Verify with `node -p "process.versions.openssl"` (for example `1.0.2a-fips`)

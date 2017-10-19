@@ -38,7 +38,7 @@ copy locally.
 ```text
 $ git clone git@github.com:username/node.git
 $ cd node
-$ git remote add upstream git://github.com/nodejs/node.git
+$ git remote add upstream https://github.com/nodejs/node.git
 ```
 
 #### Which branch?
@@ -176,13 +176,21 @@ Running `make test`/`vcbuild test` will run the linter as well unless one or
 more tests fail.
 
 If you want to run the linter without running tests, use
-`make lint`/`vcbuild lint`.
+`make lint`/`vcbuild lint`. It will run both JavaScript linting and
+C++ linting.
 
 If you are updating tests and just want to run a single test to check it, you
 can use this syntax to run it exactly as the test harness would:
 
 ```text
-$ python tools/test.py -v --mode=release parallel/test-stream2-transform
+$ python tools/test.py -J --mode=release parallel/test-stream2-transform
+```
+
+If you want to check the other options, please refer to the help by using
+the `--help` option
+
+```text
+$ python tools/test.py --help
 ```
 
 You can run tests directly with node:

@@ -1,39 +1,39 @@
 'use strict';
-
 const common = require('../common');
+
+const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const assert = require('assert');
 
 // Basic usage tests.
 assert.throws(function() {
   fs.watchFile('./some-file');
-}, /"watchFile\(\)" requires a listener function/);
+}, /^Error: "watchFile\(\)" requires a listener function$/);
 
 assert.throws(function() {
   fs.watchFile('./another-file', {}, 'bad listener');
-}, /"watchFile\(\)" requires a listener function/);
+}, /^Error: "watchFile\(\)" requires a listener function$/);
 
 assert.throws(function() {
-  fs.watchFile(new Object(), function() {});
+  fs.watchFile(new Object(), common.mustNotCall());
 }, /Path must be a string/);
 
 const enoentFile = path.join(common.tmpDir, 'non-existent-file');
 const expectedStatObject = new fs.Stats(
-    0,                                        // dev
-    0,                                        // mode
-    0,                                        // nlink
-    0,                                        // uid
-    0,                                        // gid
-    0,                                        // rdev
-    common.isWindows ? undefined : 0,         // blksize
-    0,                                        // ino
-    0,                                        // size
-    common.isWindows ? undefined : 0,         // blocks
-    Date.UTC(1970, 0, 1, 0, 0, 0),            // atime
-    Date.UTC(1970, 0, 1, 0, 0, 0),            // mtime
-    Date.UTC(1970, 0, 1, 0, 0, 0),            // ctime
-    Date.UTC(1970, 0, 1, 0, 0, 0)             // birthtime
+  0,                                        // dev
+  0,                                        // mode
+  0,                                        // nlink
+  0,                                        // uid
+  0,                                        // gid
+  0,                                        // rdev
+  common.isWindows ? undefined : 0,         // blksize
+  0,                                        // ino
+  0,                                        // size
+  common.isWindows ? undefined : 0,         // blocks
+  Date.UTC(1970, 0, 1, 0, 0, 0),            // atime
+  Date.UTC(1970, 0, 1, 0, 0, 0),            // mtime
+  Date.UTC(1970, 0, 1, 0, 0, 0),            // ctime
+  Date.UTC(1970, 0, 1, 0, 0, 0)             // birthtime
 );
 
 common.refreshTmpDir();

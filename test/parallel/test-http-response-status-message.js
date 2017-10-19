@@ -38,15 +38,15 @@ const server = net.createServer(function(connection) {
   });
 });
 
-const runTest = function(testCaseIndex) {
+function runTest(testCaseIndex) {
   const testCase = testCases[testCaseIndex];
 
   http.get({
     port: server.address().port,
     path: testCase.path
   }, function(response) {
-    console.log('client: expected status message: ' + testCase.statusMessage);
-    console.log('client: actual status message: ' + response.statusMessage);
+    console.log(`client: expected status message: ${testCase.statusMessage}`);
+    console.log(`client: actual status message: ${response.statusMessage}`);
     assert.strictEqual(testCase.statusMessage, response.statusMessage);
 
     response.on('end', function() {
@@ -61,7 +61,7 @@ const runTest = function(testCaseIndex) {
 
     response.resume();
   });
-};
+}
 
 server.listen(0, function() { runTest(0); });
 

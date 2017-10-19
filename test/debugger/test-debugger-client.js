@@ -129,7 +129,7 @@ addTest(function(client, done) {
 
 let connectCount = 0;
 const script = 'setTimeout(function() { console.log("blah"); });' +
-               'setInterval(function() {}, 1000000);';
+               'setInterval(() => {}, 1000000);';
 
 let nodeProcess;
 
@@ -172,7 +172,7 @@ function doTest(cb, done) {
         console.error('>>> connecting...');
         c.connect(debug.port);
         c.on('break', function() {
-          c.reqContinue(function() {});
+          c.reqContinue(() => {});
         });
         c.on('ready', function() {
           connectCount++;
@@ -181,8 +181,8 @@ function doTest(cb, done) {
             c.end();
             c.on('end', function() {
               console.error(
-                  '>>> killing node process %d\n\n',
-                  nodeProcess.pid);
+                '>>> killing node process %d\n\n',
+                nodeProcess.pid);
               nodeProcess.kill();
               done();
             });

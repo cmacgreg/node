@@ -1,5 +1,7 @@
 # Query String
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 <!--name=querystring-->
@@ -16,7 +18,7 @@ const querystring = require('querystring');
 added: v0.1.25
 -->
 
-* `str` {String}
+* `str` {string}
 
 The `querystring.escape()` method performs URL percent-encoding on the given
 `str` in a manner that is optimized for the specific requirements of URL
@@ -32,10 +34,10 @@ necessary by assigning `querystring.escape` to an alternative function.
 added: v0.1.25
 -->
 
-* `str` {String} The URL query string to parse
-* `sep` {String} The substring used to delimit key and value pairs in the
+* `str` {string} The URL query string to parse
+* `sep` {string} The substring used to delimit key and value pairs in the
   query string. Defaults to `'&'`.
-* `eq` {String}. The substring used to delimit keys and values in the
+* `eq` {string}. The substring used to delimit keys and values in the
   query string. Defaults to `'='`.
 * `options` {Object}
   * `decodeURIComponent` {Function} The function to use when decoding
@@ -49,6 +51,7 @@ collection of key and value pairs.
 
 For example, the query string `'foo=bar&abc=xyz&abc=123'` is parsed into:
 
+<!-- eslint-skip -->
 ```js
 {
   foo: 'bar',
@@ -70,7 +73,7 @@ in the following example:
 // Assuming gbkDecodeURIComponent function already exists...
 
 querystring.parse('w=%D6%D0%CE%C4&foo=bar', null, null,
-  { decodeURIComponent: gbkDecodeURIComponent })
+                  { decodeURIComponent: gbkDecodeURIComponent });
 ```
 
 ## querystring.stringify(obj[, sep[, eq[, options]]])
@@ -79,9 +82,9 @@ added: v0.1.25
 -->
 
 * `obj` {Object} The object to serialize into a URL query string
-* `sep` {String} The substring used to delimit key and value pairs in the
+* `sep` {string} The substring used to delimit key and value pairs in the
   query string. Defaults to `'&'`.
-* `eq` {String}. The substring used to delimit keys and values in the
+* `eq` {string}. The substring used to delimit keys and values in the
   query string. Defaults to `'='`.
 * `options`
   * `encodeURIComponent` {Function} The function to use when converting
@@ -98,10 +101,10 @@ Any other input values will be coerced to empty strings.
 For example:
 
 ```js
-querystring.stringify({ foo: 'bar', baz: ['qux', 'quux'], corge: '' })
+querystring.stringify({ foo: 'bar', baz: ['qux', 'quux'], corge: '' });
 // returns 'foo=bar&baz=qux&baz=quux&corge='
 
-querystring.stringify({ foo: 'bar', baz: 'qux' }, ';', ':')
+querystring.stringify({ foo: 'bar', baz: 'qux' }, ';', ':');
 // returns 'foo:bar;baz:qux'
 ```
 
@@ -114,14 +117,14 @@ following example:
 // Assuming gbkEncodeURIComponent function already exists,
 
 querystring.stringify({ w: '中文', foo: 'bar' }, null, null,
-  { encodeURIComponent: gbkEncodeURIComponent })
+                      { encodeURIComponent: gbkEncodeURIComponent });
 ```
 
 ## querystring.unescape(str)
 <!-- YAML
 added: v0.1.25
 -->
-* `str` {String}
+* `str` {string}
 
 
 The `querystring.unescape()` method performs decoding of URL percent-encoded

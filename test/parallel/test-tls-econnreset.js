@@ -1,11 +1,9 @@
 'use strict';
 const common = require('../common');
-const assert = require('assert');
-
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
+
+const assert = require('assert');
 const tls = require('tls');
 
 const cacert =
@@ -57,9 +55,9 @@ const server =
       clientError = err;
     }).listen(0, function() {
       const options = {
-    ciphers: 'AES128-GCM-SHA256',
-    port: this.address().port,
-    ca: ca
+        ciphers: 'AES128-GCM-SHA256',
+        port: this.address().port,
+        ca: ca
       };
       tls.connect(options).on('error', function(err) {
         assert(!connectError);

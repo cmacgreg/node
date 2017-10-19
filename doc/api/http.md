@@ -1,5 +1,7 @@
 # HTTP
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 To use the HTTP server and client one must `require('http')`.
@@ -12,6 +14,7 @@ user is able to stream data.
 
 HTTP message headers are represented by an object like this:
 
+<!-- eslint-skip -->
 ```js
 { 'content-length': '123',
   'content-type': 'text/plain',
@@ -34,6 +37,7 @@ property, which is an array of `[key, value, key2, value2, ...]`.  For
 example, the previous message header object might have a `rawHeaders`
 list like the following:
 
+<!-- eslint-disable semi -->
 ```js
 [ 'ConTent-Length', '123456',
   'content-LENGTH', '123',
@@ -110,16 +114,16 @@ added: v0.3.4
 
 * `options` {Object} Set of configurable options to set on the agent.
   Can have the following fields:
-  * `keepAlive` {Boolean} Keep sockets around even when there are no
+  * `keepAlive` {boolean} Keep sockets around even when there are no
     outstanding requests, so they can be used for future requests without
     having to reestablish a TCP connection. Default = `false`
   * `keepAliveMsecs` {Integer} When using the `keepAlive` option, specifies
     the [initial delay](#net_socket_setkeepalive_enable_initialdelay)
     for TCP Keep-Alive packets. Ignored when the
     `keepAlive` option is `false` or `undefined`. Default = `1000`.
-  * `maxSockets` {Number} Maximum number of sockets to allow per
+  * `maxSockets` {number} Maximum number of sockets to allow per
     host.  Default = `Infinity`.
-  * `maxFreeSockets` {Number} Maximum number of sockets to leave open
+  * `maxFreeSockets` {number} Maximum number of sockets to leave open
     in a free state.  Only relevant if `keepAlive` is set to `true`.
     Default = `256`.
 
@@ -130,7 +134,7 @@ To configure any of them, you must create your own [`http.Agent`][] instance.
 
 ```js
 const http = require('http');
-var keepAliveAgent = new http.Agent({ keepAlive: true });
+const keepAliveAgent = new http.Agent({ keepAlive: true });
 options.agent = keepAliveAgent;
 http.request(options, onResponseCallback);
 ```
@@ -184,9 +188,9 @@ added: v0.11.4
 -->
 
 * `options` {Object} A set of options providing information for name generation
-  * `host` {String} A domain name or IP address of the server to issue the request to
-  * `port` {Number} Port of remote server
-  * `localAddress` {String} Local interface to bind for network connections
+  * `host` {string} A domain name or IP address of the server to issue the request to
+  * `port` {number} Port of remote server
+  * `localAddress` {string} Local interface to bind for network connections
     when issuing the request
 * Returns: {String}
 
@@ -309,14 +313,14 @@ const net = require('net');
 const url = require('url');
 
 // Create an HTTP tunneling proxy
-var proxy = http.createServer( (req, res) => {
+const proxy = http.createServer((req, res) => {
   res.writeHead(200, {'Content-Type': 'text/plain'});
   res.end('okay');
 });
 proxy.on('connect', (req, cltSocket, head) => {
   // connect to an origin server
-  var srvUrl = url.parse(`http://${req.url}`);
-  var srvSocket = net.connect(srvUrl.port, srvUrl.hostname, () => {
+  const srvUrl = url.parse(`http://${req.url}`);
+  const srvSocket = net.connect(srvUrl.port, srvUrl.hostname, () => {
     cltSocket.write('HTTP/1.1 200 Connection Established\r\n' +
                     'Proxy-agent: Node.js-Proxy\r\n' +
                     '\r\n');
@@ -330,14 +334,14 @@ proxy.on('connect', (req, cltSocket, head) => {
 proxy.listen(1337, '127.0.0.1', () => {
 
   // make a request to a tunneling proxy
-  var options = {
+  const options = {
     port: 1337,
     hostname: '127.0.0.1',
     method: 'CONNECT',
     path: 'www.google.com:80'
   };
 
-  var req = http.request(options);
+  const req = http.request(options);
   req.end();
 
   req.on('connect', (res, socket, head) => {
@@ -405,7 +409,7 @@ A client server pair that show you how to listen for the `'upgrade'` event.
 const http = require('http');
 
 // Create an HTTP server
-var srv = http.createServer( (req, res) => {
+const srv = http.createServer((req, res) => {
   res.writeHead(200, {'Content-Type': 'text/plain'});
   res.end('okay');
 });
@@ -422,7 +426,7 @@ srv.on('upgrade', (req, socket, head) => {
 srv.listen(1337, '127.0.0.1', () => {
 
   // make a request
-  var options = {
+  const options = {
     port: 1337,
     hostname: '127.0.0.1',
     headers: {
@@ -431,7 +435,7 @@ srv.listen(1337, '127.0.0.1', () => {
     }
   };
 
-  var req = http.request(options);
+  const req = http.request(options);
   req.end();
 
   req.on('upgrade', (res, socket, upgradeHead) => {
@@ -463,8 +467,8 @@ aborted, in milliseconds since 1 January 1970 00:00:00 UTC.
 added: v0.1.90
 -->
 
-* `data` {String | Buffer}
-* `encoding` {String}
+* `data` {string|Buffer}
+* `encoding` {string}
 * `callback` {Function}
 
 Finishes sending the request. If any parts of the body are
@@ -472,7 +476,7 @@ unsent, it will flush them to the stream. If the request is
 chunked, this will send the terminating `'0\r\n\r\n'`.
 
 If `data` is specified, it is equivalent to calling
-[`response.write(data, encoding)`][] followed by `request.end(callback)`.
+[`request.write(data, encoding)`][] followed by `request.end(callback)`.
 
 If `callback` is specified, it will be called when the request stream
 is finished.
@@ -497,7 +501,7 @@ the optimization and kickstart the request.
 added: v0.5.9
 -->
 
-* `noDelay` {Boolean}
+* `noDelay` {boolean}
 
 Once a socket is assigned to this request and is connected
 [`socket.setNoDelay()`][] will be called.
@@ -507,8 +511,8 @@ Once a socket is assigned to this request and is connected
 added: v0.5.9
 -->
 
-* `enable` {Boolean}
-* `initialDelay` {Number}
+* `enable` {boolean}
+* `initialDelay` {number}
 
 Once a socket is assigned to this request and is connected
 [`socket.setKeepAlive()`][] will be called.
@@ -518,7 +522,7 @@ Once a socket is assigned to this request and is connected
 added: v0.5.9
 -->
 
-* `timeout` {Number} Milliseconds before a request is considered to be timed out.
+* `timeout` {number} Milliseconds before a request is considered to be timed out.
 * `callback` {Function} Optional function to be called when a timeout occurs. Same as binding to the `timeout` event.
 
 Once a socket is assigned to this request and is connected
@@ -531,8 +535,8 @@ Returns `request`.
 added: v0.1.29
 -->
 
-* `chunk` {String | Buffer}
-* `encoding` {String}
+* `chunk` {string|Buffer}
+* `encoding` {string}
 * `callback` {Function}
 
 Sends a chunk of the body.  By calling this method
@@ -731,7 +735,7 @@ subsequent call will *re-open* the server using the provided options.
 added: v0.1.90
 -->
 
-* `path` {String}
+* `path` {string}
 * `callback` {Function}
 
 Start a UNIX socket server listening for connections on the given `path`.
@@ -747,9 +751,9 @@ subsequent call will *re-open* the server using the provided options.
 added: v0.1.90
 -->
 
-* `port` {Number}
-* `hostname` {String}
-* `backlog` {Number}
+* `port` {number}
+* `hostname` {string}
+* `backlog` {number}
 * `callback` {Function}
 
 Begin accepting connections on the specified `port` and `hostname`. If the
@@ -797,7 +801,7 @@ no limit will be applied.
 added: v0.9.12
 -->
 
-* `msecs` {Number}
+* `msecs` {number}
 * `callback` {Function}
 
 Sets the timeout value for sockets, and emits a `'timeout'` event on
@@ -895,8 +899,8 @@ will result in a [`TypeError`][] being thrown.
 added: v0.1.90
 -->
 
-* `data` {String | Buffer}
-* `encoding` {String}
+* `data` {string|Buffer}
+* `encoding` {string}
 * `callback` {Function}
 
 This method signals to the server that all of the response headers and body
@@ -924,7 +928,7 @@ as `false`. After [`response.end()`][] executes, the value will be `true`.
 added: v0.4.0
 -->
 
-* `name` {String}
+* `name` {string}
 * Returns: {String}
 
 Reads out a header that's already been queued but not sent to the client.
@@ -933,7 +937,7 @@ Note that the name is case insensitive.
 Example:
 
 ```js
-var contentType = response.getHeader('content-type');
+const contentType = response.getHeader('content-type');
 ```
 
 ### response.headersSent
@@ -950,7 +954,7 @@ Boolean (read-only). True if headers were sent, false otherwise.
 added: v0.4.0
 -->
 
-* `name` {String}
+* `name` {string}
 
 Removes a header that's queued for implicit sending.
 
@@ -978,8 +982,8 @@ in responses.
 added: v0.4.0
 -->
 
-* `name` {String}
-* `value` {String}
+* `name` {string}
+* `value` {string}
 
 Sets a single header value for implicit headers.  If this header already exists
 in the to-be-sent headers, its value will be replaced.  Use an array of strings
@@ -1006,7 +1010,7 @@ any headers passed to [`response.writeHead()`][], with the headers passed to
 
 ```js
 // returns content-type = text/plain
-const server = http.createServer((req,res) => {
+const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.setHeader('X-Foo', 'bar');
   res.writeHead(200, {'Content-Type': 'text/plain'});
@@ -1019,7 +1023,7 @@ const server = http.createServer((req,res) => {
 added: v0.9.12
 -->
 
-* `msecs` {Number}
+* `msecs` {number}
 * `callback` {Function}
 
 Sets the Socket's timeout value to `msecs`.  If a callback is
@@ -1080,8 +1084,8 @@ status message which was sent out.
 added: v0.1.29
 -->
 
-* `chunk` {String | Buffer}
-* `encoding` {String}
+* `chunk` {string|Buffer}
+* `encoding` {string}
 * `callback` {Function}
 * Returns: {Boolean}
 
@@ -1126,8 +1130,8 @@ the request body should be sent. See the [`'checkContinue'`][] event on `Server`
 added: v0.1.30
 -->
 
-* `statusCode` {Number}
-* `statusMessage` {String}
+* `statusCode` {number}
+* `statusMessage` {string}
 * `headers` {Object}
 
 Sends a response header to the request. The status code is a 3-digit HTTP
@@ -1138,7 +1142,7 @@ argument.
 Example:
 
 ```js
-var body = 'hello world';
+const body = 'hello world';
 response.writeHead(200, {
   'Content-Length': Buffer.byteLength(body),
   'Content-Type': 'text/plain' });
@@ -1156,7 +1160,7 @@ any headers passed to [`response.writeHead()`][], with the headers passed to
 
 ```js
 // returns content-type = text/plain
-const server = http.createServer((req,res) => {
+const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.setHeader('X-Foo', 'bar');
   res.writeHead(200, {'Content-Type': 'text/plain'});
@@ -1315,7 +1319,7 @@ received.  Only populated at the `'end'` event.
 added: v0.5.9
 -->
 
-* `msecs` {Number}
+* `msecs` {number}
 * `callback` {Function}
 
 Calls `message.connection.setTimeout(msecs, callback)`.
@@ -1385,6 +1389,7 @@ Accept: text/plain\r\n
 
 Then `request.url` will be:
 
+<!-- eslint-disable semi -->
 ```js
 '/status?name=ryan'
 ```
@@ -1473,8 +1478,8 @@ added: v0.3.6
 Since most requests are GET requests without bodies, Node.js provides this
 convenience method. The only difference between this method and
 [`http.request()`][] is that it sets the method to GET and calls `req.end()`
-automatically. Note that response data must be consumed in the callback
-for reasons stated in [`http.ClientRequest`][] section.
+automatically. Note that the callback must take care to consume the response
+data for reasons stated in [`http.ClientRequest`][] section.
 
 The `callback` is invoked with a single argument that is an instance of
 [`http.IncomingMessage`][]
@@ -1488,10 +1493,10 @@ http.get('http://nodejs.org/dist/index.json', (res) => {
 
   let error;
   if (statusCode !== 200) {
-    error = new Error(`Request Failed.\n` +
+    error = new Error('Request Failed.\n' +
                       `Status Code: ${statusCode}`);
   } else if (!/^application\/json/.test(contentType)) {
-    error = new Error(`Invalid content-type.\n` +
+    error = new Error('Invalid content-type.\n' +
                       `Expected application/json but received ${contentType}`);
   }
   if (error) {
@@ -1506,7 +1511,7 @@ http.get('http://nodejs.org/dist/index.json', (res) => {
   res.on('data', (chunk) => rawData += chunk);
   res.on('end', () => {
     try {
-      let parsedData = JSON.parse(rawData);
+      const parsedData = JSON.parse(rawData);
       console.log(parsedData);
     } catch (e) {
       console.log(e.message);
@@ -1533,28 +1538,28 @@ added: v0.3.6
 -->
 
 * `options` {Object}
-  * `protocol` {String} Protocol to use. Defaults to `'http:'`.
-  * `host` {String} A domain name or IP address of the server to issue the
+  * `protocol` {string} Protocol to use. Defaults to `'http:'`.
+  * `host` {string} A domain name or IP address of the server to issue the
     request to. Defaults to `'localhost'`.
-  * `hostname` {String} Alias for `host`. To support [`url.parse()`][],
+  * `hostname` {string} Alias for `host`. To support [`url.parse()`][],
     `hostname` is preferred over `host`.
-  * `family` {Number} IP address family to use when resolving `host` and
+  * `family` {number} IP address family to use when resolving `host` and
     `hostname`. Valid values are `4` or `6`. When unspecified, both IP v4 and
     v6 will be used.
-  * `port` {Number} Port of remote server. Defaults to 80.
-  * `localAddress` {String} Local interface to bind for network connections.
-  * `socketPath` {String} Unix Domain Socket (use one of host:port or
+  * `port` {number} Port of remote server. Defaults to 80.
+  * `localAddress` {string} Local interface to bind for network connections.
+  * `socketPath` {string} Unix Domain Socket (use one of host:port or
     socketPath).
-  * `method` {String} A string specifying the HTTP request method. Defaults to
+  * `method` {string} A string specifying the HTTP request method. Defaults to
     `'GET'`.
-  * `path` {String} Request path. Defaults to `'/'`. Should include query
+  * `path` {string} Request path. Defaults to `'/'`. Should include query
     string if any. E.G. `'/index.html?page=12'`. An exception is thrown when
     the request path contains illegal characters. Currently, only spaces are
     rejected but that may change in the future.
   * `headers` {Object} An object containing request headers.
-  * `auth` {String} Basic authentication i.e. `'user:password'` to compute an
+  * `auth` {string} Basic authentication i.e. `'user:password'` to compute an
     Authorization header.
-  * `agent` {http.Agent|Boolean} Controls [`Agent`][] behavior. Possible values:
+  * `agent` {http.Agent|boolean} Controls [`Agent`][] behavior. Possible values:
    * `undefined` (default): use [`http.globalAgent`][] for this host and port.
    * `Agent` object: explicitly use the passed in `Agent`.
    * `false`: causes a new `Agent` with default values to be used.
@@ -1584,11 +1589,11 @@ upload a file with a POST request, then write to the `ClientRequest` object.
 Example:
 
 ```js
-var postData = querystring.stringify({
-  'msg' : 'Hello World!'
+const postData = querystring.stringify({
+  'msg': 'Hello World!'
 });
 
-var options = {
+const options = {
   hostname: 'www.google.com',
   port: 80,
   path: '/upload',
@@ -1599,7 +1604,7 @@ var options = {
   }
 };
 
-var req = http.request(options, (res) => {
+const req = http.request(options, (res) => {
   console.log(`STATUS: ${res.statusCode}`);
   console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
   res.setEncoding('utf8');
@@ -1667,6 +1672,7 @@ There are a few special headers that should be noted.
 [`net.Server.listen(port)`]: net.html#net_server_listen_port_hostname_backlog_callback
 [`net.Socket`]: net.html#net_class_net_socket
 [`request.socket.getPeerCertificate()`]: tls.html#tls_tlssocket_getpeercertificate_detailed
+[`request.write(data, encoding)`]: #http_request_write_chunk_encoding_callback
 [`response.end()`]: #http_response_end_data_encoding_callback
 [`response.setHeader()`]: #http_response_setheader_name_value
 [`response.write()`]: #http_response_write_chunk_encoding_callback

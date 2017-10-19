@@ -1,5 +1,7 @@
 # Assert
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `assert` module provides a simple set of assertion tests that can be used to
@@ -43,18 +45,18 @@ are evaluated also:
 const assert = require('assert');
 
 const obj1 = {
-  a : {
-    b : 1
+  a: {
+    b: 1
   }
 };
 const obj2 = {
-  a : {
-    b : 2
+  a: {
+    b: 2
   }
 };
 const obj3 = {
-  a : {
-    b : 1
+  a: {
+    b: 1
   }
 };
 const obj4 = Object.create(obj1);
@@ -93,10 +95,10 @@ Second, object comparisons include a strict equality check of their prototypes.
 ```js
 const assert = require('assert');
 
-assert.deepEqual({a:1}, {a:'1'});
+assert.deepEqual({ a: 1 }, { a: '1' });
 // OK, because 1 == '1'
 
-assert.deepStrictEqual({a:1}, {a:'1'});
+assert.deepStrictEqual({ a: 1 }, { a: '1' });
 // AssertionError: { a: 1 } deepStrictEqual { a: '1' }
 // because 1 !== '1' using strict equality
 ```
@@ -192,18 +194,21 @@ If the values are not equal, an `AssertionError` is thrown with a `message`
 property set equal to the value of the `message` parameter. If the `message`
 parameter is undefined, a default error message is assigned.
 
-## assert.fail(actual, expected, message, operator)
+## assert.fail(actual, expected[, message[, operator[, stackStartFunction]]])
 <!-- YAML
 added: v0.1.21
 -->
 * `actual` {any}
 * `expected` {any}
 * `message` {any}
-* `operator` {String}
+* `operator` {string}
+* `stackStartFunction` {function} (default: `assert.fail`)
 
 Throws an `AssertionError`. If `message` is falsy, the error message is set as
 the values of `actual` and `expected` separated by the provided `operator`.
 Otherwise, the error message is the value of `message`.
+If `stackStartFunction` is provided, all stack frames above that function will
+be removed from stacktrace (see [`Error.captureStackTrace`]).
 
 ```js
 const assert = require('assert');
@@ -211,8 +216,23 @@ const assert = require('assert');
 assert.fail(1, 2, undefined, '>');
 // AssertionError: 1 > 2
 
+assert.fail(1, 2, 'fail');
+// AssertionError: fail
+
 assert.fail(1, 2, 'whoops', '>');
 // AssertionError: whoops
+```
+
+Example use of `stackStartFunction` for truncating the exception's stacktrace:
+```js
+function suppressFrame() {
+  assert.fail('a', 'b', undefined, '!==', suppressFrame);
+}
+suppressFrame();
+// AssertionError: 'a' !== 'b'
+//     at repl:1:1
+//     at ContextifyScript.Script.runInThisContext (vm.js:44:33)
+//     ...
 ```
 
 ## assert.ifError(value)
@@ -251,18 +271,18 @@ Tests for any deep inequality. Opposite of [`assert.deepEqual()`][].
 const assert = require('assert');
 
 const obj1 = {
-  a : {
-    b : 1
+  a: {
+    b: 1
   }
 };
 const obj2 = {
-  a : {
-    b : 2
+  a: {
+    b: 2
   }
 };
 const obj3 = {
-  a : {
-    b : 1
+  a: {
+    b: 1
   }
 };
 const obj4 = Object.create(obj1);
@@ -297,10 +317,10 @@ Tests for deep strict inequality. Opposite of [`assert.deepStrictEqual()`][].
 ```js
 const assert = require('assert');
 
-assert.notDeepEqual({a:1}, {a:'1'});
+assert.notDeepEqual({a: 1}, {a: '1'});
 // AssertionError: { a: 1 } notDeepEqual { a: '1' }
 
-assert.notDeepStrictEqual({a:1}, {a:'1'});
+assert.notDeepStrictEqual({a: 1}, {a: '1'});
 // OK
 ```
 
@@ -466,7 +486,7 @@ assert.throws(
     throw new Error('Wrong value');
   },
   function(err) {
-    if ( (err instanceof Error) && /value/.test(err) ) {
+    if ((err instanceof Error) && /value/.test(err)) {
       return true;
     }
   },
@@ -478,6 +498,7 @@ Note that `error` can not be a string. If a string is provided as the second
 argument, then `error` is assumed to be omitted and the string will be used for
 `message` instead. This can lead to easy-to-miss mistakes:
 
+<!-- eslint-disable no-restricted-syntax -->
 ```js
 // THIS IS A MISTAKE! DO NOT DO THIS!
 assert.throws(myFunction, 'missing foo', 'did not throw with expected message');
@@ -491,5 +512,6 @@ assert.throws(myFunction, /missing foo/, 'did not throw with expected message');
 [`assert.ok()`]: #assert_assert_ok_value_message
 [`assert.throws()`]: #assert_assert_throws_block_error_message
 [`Error`]: errors.html#errors_class_error
+[`Error.captureStackTrace`]: errors.html#errors_error_capturestacktrace_targetobject_constructoropt
 [`RegExp`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
 [`TypeError`]: errors.html#errors_class_typeerror

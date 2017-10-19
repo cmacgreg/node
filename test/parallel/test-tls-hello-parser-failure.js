@@ -2,10 +2,8 @@
 
 const common = require('../common');
 
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
 
 const assert = require('assert');
 const tls = require('tls');
@@ -14,8 +12,8 @@ const net = require('net');
 const fs = require('fs');
 
 const options = {
-  key: fs.readFileSync(common.fixturesDir + '/test_key.pem'),
-  cert: fs.readFileSync(common.fixturesDir + '/test_cert.pem')
+  key: fs.readFileSync(`${common.fixturesDir}/test_key.pem`),
+  cert: fs.readFileSync(`${common.fixturesDir}/test_cert.pem`)
 };
 
 const bonkers = Buffer.alloc(1024 * 1024, 42);

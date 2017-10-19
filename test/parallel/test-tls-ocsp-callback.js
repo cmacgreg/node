@@ -1,20 +1,15 @@
 'use strict';
 const common = require('../common');
 
-if (!process.features.tls_ocsp) {
-  common.skip('node compiled without OpenSSL or ' +
-              'with old OpenSSL version.');
-  return;
-}
-if (!common.opensslCli) {
-  common.skip('node compiled without OpenSSL CLI.');
-  return;
-}
+if (!process.features.tls_ocsp)
+  common.skip('node compiled without OpenSSL or with old OpenSSL version.');
 
-if (!common.hasCrypto) {
+if (!common.opensslCli)
+  common.skip('node compiled without OpenSSL CLI.');
+
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
+
 const tls = require('tls');
 
 const assert = require('assert');
@@ -77,7 +72,7 @@ function test(testOptions, cb) {
       port: this.address().port,
       requestOCSP: testOptions.ocsp !== false,
       secureOptions: testOptions.ocsp === false ?
-          SSL_OP_NO_TICKET : 0,
+        SSL_OP_NO_TICKET : 0,
       rejectUnauthorized: false
     }, function() {
       clientSecure++;

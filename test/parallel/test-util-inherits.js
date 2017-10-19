@@ -4,8 +4,7 @@ require('../common');
 const assert = require('assert');
 const inherits = require('util').inherits;
 const errCheck =
-  new RegExp('^TypeError: The super constructor to "inherits" must not be ' +
-                      'null or undefined$');
+  /^TypeError: The super constructor to "inherits" must not be null or undefined$/;
 
 
 // super constructor
@@ -29,7 +28,7 @@ assert.strictEqual(b.a(), 'a');
 assert.strictEqual(b.b(), 'b');
 assert.strictEqual(b.constructor, B);
 
- // two levels of inheritance
+// two levels of inheritance
 function C() {
   B.call(this, 'b');
   this._c = 'c';

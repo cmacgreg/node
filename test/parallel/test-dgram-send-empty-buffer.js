@@ -1,12 +1,9 @@
 'use strict';
 const common = require('../common');
-const assert = require('assert');
-
-if (common.isOSX) {
+if (common.isOSX)
   common.skip('because of 17894467 Apple bug');
-  return;
-}
 
+const assert = require('assert');
 const dgram = require('dgram');
 
 const client = dgram.createSocket('udp4');
@@ -22,6 +19,6 @@ client.bind(0, common.mustCall(function() {
 
   const buf = Buffer.alloc(0);
   let interval = setInterval(function() {
-    client.send(buf, 0, 0, port, '127.0.0.1', common.mustCall(function() {}));
+    client.send(buf, 0, 0, port, '127.0.0.1', common.mustCall());
   }, 10);
 }));

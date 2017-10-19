@@ -1,5 +1,6 @@
 # Process
 
+<!-- introduced_in=v0.10.0 -->
 <!-- type=global -->
 
 The `process` object is a `global` that provides information about, and control
@@ -241,7 +242,7 @@ function SomeResource() {
   this.loaded = Promise.reject(new Error('Resource not yet loaded!'));
 }
 
-var resource = new SomeResource();
+const resource = new SomeResource();
 // no .catch or .then on resource.loaded for at least a turn
 ```
 
@@ -268,9 +269,9 @@ lead to sub-optimal application performance, bugs or security vulnerabilities.
 The listener function is called with a single `warning` argument whose value is
 an `Error` object. There are three key properties that describe the warning:
 
-* `name` {String} The name of the warning (currently `Warning` by default).
-* `message` {String} A system-provided description of the warning.
-* `stack` {String} A stack trace to the location in the code where the warning
+* `name` {string} The name of the warning (currently `Warning` by default).
+* `message` {string} A system-provided description of the warning.
+* `stack` {string} A stack trace to the location in the code where the warning
   was issued.
 
 ```js
@@ -320,11 +321,11 @@ custom or application specific warnings.
 ```js
 // Emit a warning using a string...
 process.emitWarning('Something happened!');
-  // Prints: (node 12345) Warning: Something happened!
+// Prints: (node 12345) Warning: Something happened!
 
 // Emit a warning using an object...
 process.emitWarning('Something Happened!', 'CustomWarning');
-  // Prints: (node 12345) CustomWarning: Something happened!
+// Prints: (node 12345) CustomWarning: Something happened!
 
 // Emit a warning using a custom Error object...
 class CustomWarning extends Error {
@@ -336,7 +337,7 @@ class CustomWarning extends Error {
 }
 const myWarning = new CustomWarning('Something happened!');
 process.emitWarning(myWarning);
-  // Prints: (node 12345) CustomWarning: Something happened!
+// Prints: (node 12345) CustomWarning: Something happened!
 ```
 
 #### Emitting custom deprecation warnings
@@ -447,7 +448,7 @@ generate a core file.
 added: v0.5.0
 -->
 
-* {String}
+* {string}
 
 The `process.arch` property returns a String identifying the processor
 architecture that the Node.js process is currently running on. For instance
@@ -501,7 +502,7 @@ Would generate the output:
 added: 6.4.0
 -->
 
-* {String}
+* {string}
 
 The `process.argv0` property stores a read-only copy of the original value of
 `argv[0]` passed when Node.js starts.
@@ -519,7 +520,7 @@ $ bash -c 'exec -a customArgv0 ./node'
 added: v0.1.17
 -->
 
-* `directory` {String}
+* `directory` {string}
 
 The `process.chdir()` method changes the current working directory of the
 Node.js process or throws an exception if doing so fails (for instance, if
@@ -530,9 +531,8 @@ console.log(`Starting directory: ${process.cwd()}`);
 try {
   process.chdir('/tmp');
   console.log(`New directory: ${process.cwd()}`);
-}
-catch (err) {
-  console.log(`chdir: ${err}`);
+} catch (err) {
+  console.error(`chdir: ${err}`);
 }
 ```
 
@@ -550,6 +550,7 @@ running the `./configure` script.
 
 An example of the possible output looks like:
 
+<!-- eslint-skip -->
 ```js
 {
   target_defaults:
@@ -586,7 +587,7 @@ replace the value of `process.config`.
 added: v0.7.2
 -->
 
-* {Boolean}
+* {boolean}
 
 If the Node.js process is spawned with an IPC channel (see the [Child Process][]
 and [Cluster][] documentation), the `process.connected` property will return
@@ -604,8 +605,8 @@ added: v6.1.0
 * `previousValue` {Object} A previous return value from calling
   `process.cpuUsage()`
 * Returns: {Object}
-    * `user` {Integer}
-    * `system` {Integer}
+    * `user` {integer}
+    * `system` {integer}
 
 The `process.cpuUsage()` method returns the user and system CPU time usage of
 the current process, in an object with properties `user` and `system`, whose
@@ -633,7 +634,7 @@ console.log(process.cpuUsage(startUsage));
 added: v0.1.8
 -->
 
-* Returns: {String}
+* Returns: {string}
 
 The `process.cwd()` method returns the current working directory of the Node.js
 process.
@@ -670,6 +671,7 @@ See environ(7).
 
 An example of this object looks like:
 
+<!-- eslint-skip -->
 ```js
 {
   TERM: 'xterm-256color',
@@ -740,8 +742,8 @@ console.log(process.env.test);
 added: v6.0.0
 -->
 
-* `warning` {String | Error} The warning to emit.
-* `name` {String} When `warning` is a String, `name` is the name to use
+* `warning` {string | Error} The warning to emit.
+* `name` {string} When `warning` is a String, `name` is the name to use
   for the warning. Default: `Warning`.
 * `ctor` {Function} When `warning` is a String, `ctor` is an optional
   function used to limit the generated stack trace. Default
@@ -811,7 +813,7 @@ so, it is recommended to place the `emitWarning()` behind a simple boolean
 flag as illustrated in the example below:
 
 ```js
-var warned = false;
+let warned = false;
 function emitMyWarning() {
   if (!warned) {
     process.emitWarning('Only warn once!');
@@ -846,12 +848,14 @@ $ node --harmony script.js --version
 
 Results in `process.execArgv`:
 
+<!-- eslint-disable semi -->
 ```js
 ['--harmony']
 ```
 
 And `process.argv`:
 
+<!-- eslint-disable semi -->
 ```js
 ['/usr/local/bin/node', 'script.js', '--version']
 ```
@@ -861,13 +865,14 @@ And `process.argv`:
 added: v0.1.100
 -->
 
-* {String}
+* {string}
 
 The `process.execPath` property returns the absolute pathname of the executable
 that started the Node.js process.
 
 For example:
 
+<!-- eslint-disable semi -->
 ```js
 '/usr/local/bin/node'
 ```
@@ -878,7 +883,7 @@ For example:
 added: v0.1.13
 -->
 
-* `code` {Integer} The exit code. Defaults to `0`.
+* `code` {integer} The exit code. Defaults to `0`.
 
 The `process.exit()` method instructs Node.js to terminate the process
 synchronously with an exit status of `code`. If `code` is omitted, exit uses
@@ -943,7 +948,7 @@ is safer than calling `process.exit()`.
 added: v0.11.8
 -->
 
-* {Integer}
+* {integer}
 
 A number which will be the process exit code, when the process either
 exits gracefully, or is exited via [`process.exit()`][] without specifying
@@ -1028,7 +1033,7 @@ Android)
 added: v0.1.28
 -->
 
-* Returns: {Integer}
+* Returns: {integer}
 
 The `process.getuid()` method returns the numeric user identity of the process.
 (See getuid(2).)
@@ -1059,11 +1064,11 @@ Passing in the result of a previous call to `process.hrtime()` is useful for
 calculating an amount of time passed between calls:
 
 ```js
-var time = process.hrtime();
+const time = process.hrtime();
 // [ 1800216, 25 ]
 
 setTimeout(() => {
-  var diff = process.hrtime(time);
+  const diff = process.hrtime(time);
   // [ 1, 552 ]
 
   console.log(`Benchmark took ${diff[0] * 1e9 + diff[1]} nanoseconds`);
@@ -1080,8 +1085,8 @@ passing the result to process.hrtime() will result in undefined behavior.
 added: v0.9.4
 -->
 
-* `user` {String|number} The user name or numeric identifier.
-* `extra_group` {String|number} A group name or numeric identifier.
+* `user` {string|number} The user name or numeric identifier.
+* `extra_group` {string|number} A group name or numeric identifier.
 
 The `process.initgroups()` method reads the `/etc/group` file and initializes
 the group access list, using all groups of which the user is a member. This is
@@ -1107,7 +1112,7 @@ added: v0.0.6
 -->
 
 * `pid` {number} A process ID
-* `signal` {String|number} The signal to send, either as a string or number.
+* `signal` {string|number} The signal to send, either as a string or number.
   Defaults to `'SIGTERM'`.
 
 The `process.kill()` method sends the `signal` to the process identified by
@@ -1163,10 +1168,10 @@ added: v0.1.16
 -->
 
 * Returns: {Object}
-    * `rss` {Integer}
-    * `heapTotal` {Integer}
-    * `heapUsed` {Integer}
-    * `external` {Integer}
+    * `rss` {integer}
+    * `heapTotal` {integer}
+    * `heapUsed` {integer}
+    * `external` {integer}
 
 The `process.memoryUsage()` method returns an object describing the memory usage
 of the Node.js process measured in bytes.
@@ -1179,6 +1184,7 @@ console.log(process.memoryUsage());
 
 Will generate:
 
+<!-- eslint-skip -->
 ```js
 {
   rss: 4935680,
@@ -1233,7 +1239,7 @@ function MyThing(options) {
   });
 }
 
-var thing = new MyThing();
+const thing = new MyThing();
 thing.getReadyForStuff();
 
 // thing.startDoingStuff() gets called now, not before.
@@ -1291,7 +1297,7 @@ happening, just like a `while(true);` loop.
 added: v0.1.15
 -->
 
-* {Integer}
+* {integer}
 
 The `process.pid` property returns the PID of the process.
 
@@ -1304,7 +1310,7 @@ console.log(`This process is pid ${process.pid}`);
 added: v0.1.16
 -->
 
-* {String}
+* {string}
 
 The `process.platform` property returns a string identifying the operating
 system platform on which the Node.js process is running. For instance
@@ -1325,7 +1331,7 @@ tarball.
 
 `process.release` contains the following properties:
 
-* `name` {String} A value that will always be `'node'` for Node.js. For
+* `name` {string} A value that will always be `'node'` for Node.js. For
   legacy io.js releases, this will be `'io.js'`.
 * `lts`: a string with a value indicating the _codename_ of the LTS (Long-term
   Support) line the current release is part of. This property only exists for
@@ -1333,21 +1339,22 @@ tarball.
   releases. Current valid values are:
   - `"Argon"` for the v4.x LTS line beginning with v4.2.0.
   - `"Boron"` for the v6.x LTS line beginning with v6.9.0.
-* `sourceUrl` {String} an absolute URL pointing to a _`.tar.gz`_ file containing
+* `sourceUrl` {string} an absolute URL pointing to a _`.tar.gz`_ file containing
   the source code of the current release.
-* `headersUrl`{String} an absolute URL pointing to a _`.tar.gz`_ file containing
+* `headersUrl`{string} an absolute URL pointing to a _`.tar.gz`_ file containing
   only the source header files for the current release. This file is
   significantly smaller than the full source file and can be used for compiling
   Node.js native add-ons.
-* `libUrl` {String} an absolute URL pointing to a _`node.lib`_ file matching the
+* `libUrl` {string} an absolute URL pointing to a _`node.lib`_ file matching the
   architecture and version of the current release. This file is used for
   compiling Node.js native add-ons. _This property is only present on Windows
   builds of Node.js and will be missing on all other platforms._
-* `lts` {String} a string label identifying the [LTS][] label for this release.
+* `lts` {string} a string label identifying the [LTS][] label for this release.
   If the Node.js release is not an LTS release, this will be `undefined`.
 
 For example:
 
+<!-- eslint-skip -->
 ```js
 {
   name: 'node',
@@ -1371,7 +1378,7 @@ added: v0.5.9
 * `sendHandle` {Handle object}
 * `options` {Object}
 * `callback` {Function}
-* Returns: {Boolean}
+* Returns: {boolean}
 
 If Node.js is spawned with an IPC channel, the `process.send()` method can be
 used to send messages to the parent process. Messages will be received as a
@@ -1388,7 +1395,7 @@ If Node.js was not spawned with an IPC channel, `process.send()` will be
 added: v2.0.0
 -->
 
-* `id` {String|number} A group name or ID
+* `id` {string|number} A group name or ID
 
 The `process.setegid()` method sets the effective group identity of the process.
 (See setegid(2).) The `id` can be passed as either a numeric ID or a group
@@ -1401,8 +1408,7 @@ if (process.getegid && process.setegid) {
   try {
     process.setegid(501);
     console.log(`New gid: ${process.getegid()}`);
-  }
-  catch (err) {
+  } catch (err) {
     console.log(`Failed to set gid: ${err}`);
   }
 }
@@ -1417,7 +1423,7 @@ Android)
 added: v2.0.0
 -->
 
-* `id` {String|number} A user name or ID
+* `id` {string|number} A user name or ID
 
 The `process.seteuid()` method sets the effective user identity of the process.
 (See seteuid(2).) The `id` can be passed as either a numeric ID or a username
@@ -1430,8 +1436,7 @@ if (process.geteuid && process.seteuid) {
   try {
     process.seteuid(501);
     console.log(`New uid: ${process.geteuid()}`);
-  }
-  catch (err) {
+  } catch (err) {
     console.log(`Failed to set uid: ${err}`);
   }
 }
@@ -1445,7 +1450,7 @@ Android)
 added: v0.1.31
 -->
 
-* `id` {String|number} The group name or ID
+* `id` {string|number} The group name or ID
 
 The `process.setgid()` method sets the group identity of the process. (See
 setgid(2).)  The `id` can be passed as either a numeric ID or a group name
@@ -1458,8 +1463,7 @@ if (process.getgid && process.setgid) {
   try {
     process.setgid(501);
     console.log(`New gid: ${process.getgid()}`);
-  }
-  catch (err) {
+  } catch (err) {
     console.log(`Failed to set gid: ${err}`);
   }
 }
@@ -1500,8 +1504,7 @@ if (process.getuid && process.setuid) {
   try {
     process.setuid(501);
     console.log(`New uid: ${process.getuid()}`);
-  }
-  catch (err) {
+  } catch (err) {
     console.log(`Failed to set uid: ${err}`);
   }
 }
@@ -1538,7 +1541,7 @@ For example:
 process.stdin.setEncoding('utf8');
 
 process.stdin.on('readable', () => {
-  var chunk = process.stdin.read();
+  const chunk = process.stdin.read();
   if (chunk !== null) {
     process.stdout.write(`data: ${chunk}`);
   }
@@ -1590,7 +1593,7 @@ important ways:
    - TTYs (Terminals): *asynchronous* on Windows, *synchronous* on Unix
    - Pipes (and sockets): *synchronous* on Windows, *asynchronous* on Unix
 
-These behaviours are partly for historical reasons, as changing them would
+These behaviors are partly for historical reasons, as changing them would
 create backwards incompatibility, but they are also expected by some users.
 
 Synchronous writes avoid problems such as output written with `console.log()` or
@@ -1629,7 +1632,7 @@ See the [TTY][] documentation for more information.
 added: v0.1.104
 -->
 
-* {String}
+* {string}
 
 The `process.title` property returns the current process title (i.e. returns
 the current value of `ps`). Assigning a new value to `process.title` modifies
@@ -1652,9 +1655,9 @@ added: v0.1.19
 * `mask` {number}
 
 The `process.umask()` method sets or returns the Node.js process's file mode
-creation mask. Child processes inherit the mask from the parent process. The old
-mask is return if the `mask` argument is given, otherwise returns the current
-mask.
+creation mask. Child processes inherit the mask from the parent process. Invoked
+without an argument, the current mask is returned, otherwise the umask is set to
+the argument value and the previous mask is returned.
 
 ```js
 const newmask = 0o022;
@@ -1670,17 +1673,20 @@ console.log(
 added: v0.5.0
 -->
 
-* Returns: {Number}
+* Returns: {number}
 
 The `process.uptime()` method returns the number of seconds the current Node.js
 process has been running.
+
+*Note*: the return value includes fractions of a second. Use `Math.floor()`
+to get whole seconds.
 
 ## process.version
 <!-- YAML
 added: v0.1.3
 -->
 
-* {String}
+* {string}
 
 The `process.version` property returns the Node.js version string.
 
@@ -1704,8 +1710,9 @@ to load modules that were compiled against a different module ABI version.
 console.log(process.versions);
 ```
 
-Will generate output similar to:
+Will generate an object similar to:
 
+<!-- eslint-skip -->
 ```js
 {
   http_parser: '2.3.0',

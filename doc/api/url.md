@@ -1,5 +1,7 @@
 # URL
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `url` module provides utilities for URL resolution and parsing. It can be
@@ -136,7 +138,7 @@ For example: `'#hash'`
 added: v0.1.25
 -->
 
-* `urlObject` {Object | String} A URL object (as returned by `url.parse()` or
+* `urlObject` {Object | string} A URL object (as returned by `url.parse()` or
   constructed otherwise). If a string, it is converted to an object by passing
   it to `url.parse()`.
 
@@ -204,12 +206,12 @@ The formatting process operates as follows:
 added: v0.1.25
 -->
 
-* `urlString` {String} The URL string to parse.
-* `parseQueryString` {Boolean} If `true`, the `query` property will always
+* `urlString` {string} The URL string to parse.
+* `parseQueryString` {boolean} If `true`, the `query` property will always
   be set to an object returned by the [`querystring`][] module's `parse()`
   method. If `false`, the `query` property on the returned URL object will be an
   unparsed, undecoded string. Defaults to `false`.
-* `slashesDenoteHost` {Boolean} If `true`, the first token after the literal
+* `slashesDenoteHost` {boolean} If `true`, the first token after the literal
   string `//` and preceding the next `/` will be interpreted as the `host`.
   For instance, given `//foo/bar`, the result would be
   `{host: 'foo', pathname: '/bar'}` rather than `{pathname: '//foo/bar'}`.
@@ -223,8 +225,8 @@ object.
 added: v0.1.25
 -->
 
-* `from` {String} The Base URL being resolved against.
-* `to` {String} The HREF URL being resolved.
+* `from` {string} The Base URL being resolved against.
+* `to` {string} The HREF URL being resolved.
 
 The `url.resolve()` method resolves a target URL relative to a base URL in a
 manner similar to that of a Web browser resolving an anchor tag HREF.
@@ -232,9 +234,9 @@ manner similar to that of a Web browser resolving an anchor tag HREF.
 For example:
 
 ```js
-url.resolve('/one/two/three', 'four')         // '/one/two/four'
-url.resolve('http://example.com/', '/one')    // 'http://example.com/one'
-url.resolve('http://example.com/one', '/two') // 'http://example.com/two'
+url.resolve('/one/two/three', 'four');         // '/one/two/four'
+url.resolve('http://example.com/', '/one');    // 'http://example.com/one'
+url.resolve('http://example.com/one', '/two'); // 'http://example.com/two'
 ```
 
 ## Escaped Characters
@@ -249,7 +251,6 @@ properties of URL objects:
 
 For example, the ASCII space character (`' '`) is encoded as `%20`. The ASCII
 forward slash (`/`) character is encoded as `%3C`.
-
 
 [`Error`]: errors.html#errors_class_error
 [`querystring`]: querystring.html

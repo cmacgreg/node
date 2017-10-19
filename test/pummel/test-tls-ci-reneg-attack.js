@@ -1,20 +1,15 @@
 'use strict';
 const common = require('../common');
+if (!common.hasCrypto)
+  common.skip('missing crypto');
+
+if (!common.opensslCli)
+  common.skip('node compiled without OpenSSL CLI.');
+
 const assert = require('assert');
 const spawn = require('child_process').spawn;
-
-if (!common.hasCrypto) {
-  common.skip('missing crypto');
-  return;
-}
 const tls = require('tls');
-
 const fs = require('fs');
-
-if (!common.opensslCli) {
-  common.skip('node compiled without OpenSSL CLI.');
-  return;
-}
 
 // renegotiation limits to test
 const LIMITS = [0, 1, 2, 3, 5, 10, 16];
@@ -31,15 +26,15 @@ const LIMITS = [0, 1, 2, 3, 5, 10, 16];
 
 function test(next) {
   const options = {
-    cert: fs.readFileSync(common.fixturesDir + '/test_cert.pem'),
-    key: fs.readFileSync(common.fixturesDir + '/test_key.pem')
+    cert: fs.readFileSync(`${common.fixturesDir}/test_cert.pem`),
+    key: fs.readFileSync(`${common.fixturesDir}/test_key.pem`)
   };
 
   let seenError = false;
 
   const server = tls.createServer(options, function(conn) {
     conn.on('error', function(err) {
-      console.error('Caught exception: ' + err);
+      console.error(`Caught exception: ${err}`);
       assert(/TLS session renegotiation attack/.test(err));
       conn.destroy();
       seenError = true;
@@ -48,7 +43,7 @@ function test(next) {
   });
 
   server.listen(common.PORT, function() {
-    const args = ('s_client -connect 127.0.0.1:' + common.PORT).split(' ');
+    const args = (`s_client -connect 127.0.0.1:${common.PORT}`).split(' ');
     const child = spawn(common.opensslCli, args);
 
     //child.stdout.pipe(process.stdout);
@@ -63,9 +58,9 @@ function test(next) {
 
     child.stderr.on('data', function(data) {
       if (seenError) return;
-      handshakes += (('' + data).match(/verify return:1/g) || []).length;
+      handshakes += ((String(data)).match(/verify return:1/g) || []).length;
       if (handshakes === 2) spam();
-      renegs += (('' + data).match(/RENEGOTIATING/g) || []).length;
+      renegs += ((String(data)).match(/RENEGOTIATING/g) || []).length;
     });
 
     child.on('exit', function() {

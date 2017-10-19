@@ -1,4 +1,5 @@
 'use strict';
+
 require('../common');
 const assert = require('assert');
 
@@ -16,7 +17,7 @@ function createTestServer() {
 }
 
 function testServer() {
-  http.Server.call(this, function() {});
+  http.Server.call(this, () => {});
 
   this.on('connection', function() {
     requests_recv++;

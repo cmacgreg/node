@@ -1,11 +1,9 @@
 'use strict';
 const common = require('../common');
-const assert = require('assert');
-
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
+
+const assert = require('assert');
 const crypto = require('crypto');
 
 crypto.DEFAULT_ENCODING = 'buffer';
@@ -307,18 +305,25 @@ const TEST_CASES = [
     tag: 'a44a8266ee1c8eb0c8b5d4cf5ae9f19a', tampered: false },
 ];
 
+const errMessages = {
+  auth: / auth/,
+  state: / state/,
+  FIPS: /not supported in FIPS mode/,
+  length: /Invalid IV length/,
+};
+
 const ciphers = crypto.getCiphers();
 
 for (const i in TEST_CASES) {
   const test = TEST_CASES[i];
 
   if (!ciphers.includes(test.algo)) {
-    common.skip('unsupported ' + test.algo + ' test');
+    common.printSkipMessage(`unsupported ${test.algo} test`);
     continue;
   }
 
   if (common.hasFipsCrypto && test.iv.length < 24) {
-    common.skip('IV len < 12 bytes unsupported in FIPS mode');
+    common.printSkipMessage('IV len < 12 bytes unsupported in FIPS mode');
     continue;
   }
 
@@ -357,14 +362,14 @@ for (const i in TEST_CASES) {
       assert.strictEqual(msg, test.plain);
     } else {
       // assert that final throws if input data could not be verified!
-      assert.throws(function() { decrypt.final('ascii'); }, / auth/);
+      assert.throws(function() { decrypt.final('ascii'); }, errMessages.auth);
     }
   }
 
   if (test.password) {
     if (common.hasFipsCrypto) {
       assert.throws(() => { crypto.createCipher(test.algo, test.password); },
-                    /not supported in FIPS mode/);
+                    errMessages.FIPS);
     } else {
       const encrypt = crypto.createCipher(test.algo, test.password);
       if (test.aad)
@@ -383,7 +388,7 @@ for (const i in TEST_CASES) {
   if (test.password) {
     if (common.hasFipsCrypto) {
       assert.throws(() => { crypto.createDecipher(test.algo, test.password); },
-                    /not supported in FIPS mode/);
+                    errMessages.FIPS);
     } else {
       const decrypt = crypto.createDecipher(test.algo, test.password);
       decrypt.setAuthTag(Buffer.from(test.tag, 'hex'));
@@ -395,7 +400,7 @@ for (const i in TEST_CASES) {
         assert.strictEqual(msg, test.plain);
       } else {
         // assert that final throws if input data could not be verified!
-        assert.throws(function() { decrypt.final('ascii'); }, / auth/);
+        assert.throws(function() { decrypt.final('ascii'); }, errMessages.auth);
       }
     }
   }
@@ -406,7 +411,7 @@ for (const i in TEST_CASES) {
                                           Buffer.from(test.key, 'hex'),
                                           Buffer.from(test.iv, 'hex'));
     encrypt.update('blah', 'ascii');
-    assert.throws(function() { encrypt.getAuthTag(); }, / state/);
+    assert.throws(function() { encrypt.getAuthTag(); }, errMessages.state);
   }
 
   {
@@ -415,7 +420,7 @@ for (const i in TEST_CASES) {
                                           Buffer.from(test.key, 'hex'),
                                           Buffer.from(test.iv, 'hex'));
     assert.throws(() => { encrypt.setAuthTag(Buffer.from(test.tag, 'hex')); },
-                  / state/);
+                  errMessages.state);
   }
 
   {
@@ -423,7 +428,7 @@ for (const i in TEST_CASES) {
     const decrypt = crypto.createDecipheriv(test.algo,
                                             Buffer.from(test.key, 'hex'),
                                             Buffer.from(test.iv, 'hex'));
-    assert.throws(function() { decrypt.getAuthTag(); }, / state/);
+    assert.throws(function() { decrypt.getAuthTag(); }, errMessages.state);
   }
 
   {
@@ -434,7 +439,7 @@ for (const i in TEST_CASES) {
         Buffer.from(test.key, 'hex'),
         Buffer.alloc(0)
       );
-    }, /Invalid IV length/);
+    }, errMessages.length);
   }
 }
 
@@ -446,6 +451,7 @@ for (const i in TEST_CASES) {
                             '6fKjEjR3Vl30EUYC');
   encrypt.update('blah', 'ascii');
   encrypt.final();
-  assert.throws(() => encrypt.getAuthTag(), / state/);
-  assert.throws(() => encrypt.setAAD(Buffer.from('123', 'ascii')), / state/);
+  assert.throws(() => encrypt.getAuthTag(), errMessages.state);
+  assert.throws(() => encrypt.setAAD(Buffer.from('123', 'ascii')),
+                errMessages.state);
 }

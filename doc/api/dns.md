@@ -1,5 +1,7 @@
 # DNS
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `dns` module contains functions belonging to two different categories:
@@ -74,15 +76,15 @@ an integer, then it must be `4` or `6`.
 
 Alternatively, `options` can be an object containing these properties:
 
-* `family` {Number} - The record family. If present, must be the integer
+* `family` {number} - The record family. If present, must be the integer
   `4` or `6`. If not provided, both IP v4 and v6 addresses are accepted.
-* `hints`: {Number} - If present, it should be one or more of the supported
+* `hints`: {number} - If present, it should be one or more of the supported
   `getaddrinfo` flags. If `hints` is not provided, then no flags are passed to
   `getaddrinfo`. Multiple flags can be passed through `hints` by bitwise
   `OR`ing their values.
   See [supported `getaddrinfo` flags][] for more information on supported
   flags.
-* `all`: {Boolean} - When `true`, the callback returns all resolved addresses
+* `all`: {boolean} - When `true`, the callback returns all resolved addresses
   in an array, otherwise returns a single address. Defaults to `false`.
 
 All properties are optional.
@@ -169,31 +171,32 @@ dns.lookupService('127.0.0.1', 22, (err, hostname, service) => {
 added: v0.1.27
 -->
 
-Uses the DNS protocol to resolve a hostname (e.g. `'nodejs.org'`) into an
-array of the record types specified by `rrtype`.
+- `hostname` {string} Hostname to resolve.
+- `rrtype` {string} Resource record type. Default: `'A'`.
+- `callback` {Function}
+  - `err` {Error}
+  - `records` {string[] | Object[] | string[][] | Object}
 
-Valid values for `rrtype` are:
+Uses the DNS protocol to resolve a hostname (e.g. `'nodejs.org'`) into an array
+of the resource records. The `callback` function has arguments
+`(err, records)`. When successful, `records` will be an array of resource
+records. The type and structure of individual results varies based on `rrtype`:
 
- * `'A'` - IPV4 addresses, default
- * `'AAAA'` - IPV6 addresses
- * `'MX'` - mail exchange records
- * `'TXT'` - text records
- * `'SRV'` - SRV records
- * `'PTR'` - PTR records
- * `'NS'` - name server records
- * `'CNAME'` - canonical name records
- * `'SOA'` - start of authority record
- * `'NAPTR'` - name authority pointer record
+|  `rrtype` | `records` contains             | Result type | Shorthand method         |
+|-----------|--------------------------------|-------------|--------------------------|
+| `'A'`     | IPv4 addresses (default)       | {string}    | [`dns.resolve4()`][]     |
+| `'AAAA'`  | IPv6 addresses                 | {string}    | [`dns.resolve6()`][]     |
+| `'CNAME'` | canonical name records         | {string}    | [`dns.resolveCname()`][] |
+| `'MX'`    | mail exchange records          | {Object}    | [`dns.resolveMx()`][]    |
+| `'NAPTR'` | name authority pointer records | {Object}    | [`dns.resolveNaptr()`][] |
+| `'NS'`    | name server records            | {string}    | [`dns.resolveNs()`][]    |
+| `'PTR'`   | pointer records                | {string}    | [`dns.resolvePtr()`][]   |
+| `'SOA'`   | start of authority records     | {Object}    | [`dns.resolveSoa()`][]   |
+| `'SRV'`   | service records                | {Object}    | [`dns.resolveSrv()`][]   |
+| `'TXT'`   | text records                   | {string}    | [`dns.resolveTxt()`][]   |
 
-The `callback` function has arguments `(err, addresses)`. When successful,
-`addresses` will be an array, except when resolving an SOA record which returns
-an object structured in the same manner as one returned by the
-[`dns.resolveSoa()`][] method. The type of each item in `addresses` is
-determined by the record type, and described in the documentation for the
-corresponding lookup methods.
-
-On error, `err` is an [`Error`][] object, where `err.code` is
-one of the error codes listed [here](#dns_error_codes).
+On error, `err` is an [`Error`][] object, where `err.code` is one of the
+[DNS error codes](#dns_error_codes).
 
 ## dns.resolve4(hostname[, options], callback)
 <!-- YAML
@@ -205,9 +208,9 @@ Uses the DNS protocol to resolve a IPv4 addresses (`A` records) for the
 will contain an array of IPv4 addresses (e.g.
 `['74.125.79.104', '74.125.79.105', '74.125.79.106']`).
 
-* `hostname` {String} Hostname to resolve.
+* `hostname` {string} Hostname to resolve.
 * `options` {Object}
-  * `ttl` {Boolean} Retrieve the Time-To-Live value (TTL) of each record.
+  * `ttl` {boolean} Retrieve the Time-To-Live value (TTL) of each record.
     The callback receives an array of `{ address: '1.2.3.4', ttl: 60 }` objects
     rather than an array of strings.  The TTL is expressed in seconds.
 * `callback` {Function} An `(err, result)` callback function.
@@ -221,9 +224,9 @@ Uses the DNS protocol to resolve a IPv6 addresses (`AAAA` records) for the
 `hostname`. The `addresses` argument passed to the `callback` function
 will contain an array of IPv6 addresses.
 
-* `hostname` {String} Hostname to resolve.
+* `hostname` {string} Hostname to resolve.
 * `options` {Object}
-  * `ttl` {Boolean} Retrieve the Time-To-Live value (TTL) of each record.
+  * `ttl` {boolean} Retrieve the Time-To-Live value (TTL) of each record.
     The callback receives an array of `{ address: '0:1:2:3:4:5:6:7', ttl: 60 }`
     objects rather than an array of strings.  The TTL is expressed in seconds.
 * `callback` {Function} An `(err, result)` callback function.
@@ -267,6 +270,7 @@ will contain an array of objects with the following properties:
 
 For example:
 
+<!-- eslint-skip -->
 ```js
 {
   flags: 's',
@@ -305,6 +309,7 @@ be an object with the following properties:
 * `expire`
 * `minttl`
 
+<!-- eslint-skip -->
 ```js
 {
   nsname: 'ns.example.com',
@@ -331,6 +336,7 @@ be an array of objects with the following properties:
 * `port`
 * `name`
 
+<!-- eslint-skip -->
 ```js
 {
   priority: 10,
@@ -463,7 +469,16 @@ uses. For instance, _they do not use the configuration from `/etc/hosts`_.
 
 [DNS error codes]: #dns_error_codes
 [`dns.lookup()`]: #dns_dns_lookup_hostname_options_callback
+[`dns.resolve4()`]: #dns_dns_resolve4_hostname_options_callback
+[`dns.resolve6()`]: #dns_dns_resolve6_hostname_options_callback
+[`dns.resolveCname()`]: #dns_dns_resolvecname_hostname_callback
+[`dns.resolveMx()`]: #dns_dns_resolvemx_hostname_callback
+[`dns.resolveNaptr()`]: #dns_dns_resolvenaptr_hostname_callback
+[`dns.resolveNs()`]: #dns_dns_resolvens_hostname_callback
+[`dns.resolvePtr()`]: #dns_dns_resolveptr_hostname_callback
 [`dns.resolveSoa()`]: #dns_dns_resolvesoa_hostname_callback
+[`dns.resolveSrv()`]: #dns_dns_resolvesrv_hostname_callback
+[`dns.resolveTxt()`]: #dns_dns_resolvetxt_hostname_callback
 [`Error`]: errors.html#errors_class_error
 [Implementation considerations section]: #dns_implementation_considerations
 [supported `getaddrinfo` flags]: #dns_supported_getaddrinfo_flags

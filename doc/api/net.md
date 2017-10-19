@@ -1,5 +1,7 @@
 # Net
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `net` module provides you with an asynchronous network wrapper. It contains
@@ -58,10 +60,13 @@ added: v0.1.90
 -->
 
 Returns the bound address, the address family name, and port of the server
-as reported by the operating system.
+as reported by the operating system if listening on an IP socket.
 Useful to find which port was assigned when getting an OS-assigned address.
 Returns an object with `port`, `family`, and `address` properties:
 `{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`
+
+For a server listening on a pipe or UNIX domain socket, the name is returned
+as a string.
 
 Example:
 
@@ -86,12 +91,16 @@ Don't call `server.address()` until the `'listening'` event has been emitted.
 added: v0.1.90
 -->
 
+* Returns: {net.Server}
+
 Stops the server from accepting new connections and keeps existing
 connections. This function is asynchronous, the server is finally
 closed when all connections are ended and the server emits a [`'close'`][] event.
 The optional `callback` will be called once the `'close'` event occurs. Unlike
 that event, it will be called with an Error as its only argument if the server
 was not open when it was closed.
+
+Returns `server`.
 
 ### server.connections
 <!-- YAML
@@ -123,8 +132,9 @@ added: v0.5.10
 -->
 
 * `handle` {Object}
-* `backlog` {Number}
+* `backlog` {number}
 * `callback` {Function}
+* Returns: {net.Server}
 
 The `handle` object can be set to either a server or socket (anything
 with an underlying `_handle` member), or a `{fd: <n>}` object.
@@ -149,12 +159,13 @@ added: v0.11.14
 -->
 
 * `options` {Object} - Required. Supports the following properties:
-  * `port` {Number} - Optional.
-  * `host` {String} - Optional.
-  * `backlog` {Number} - Optional.
-  * `path` {String} - Optional.
-  * `exclusive` {Boolean} - Optional.
+  * `port` {number} - Optional.
+  * `host` {string} - Optional.
+  * `backlog` {number} - Optional.
+  * `path` {string} - Optional.
+  * `exclusive` {boolean} - Optional.
 * `callback` {Function} - Optional.
+* Returns: {net.Server}
 
 The `port`, `host`, and `backlog` properties of `options`, as well as the
 optional callback function, behave as they do on a call to
@@ -183,9 +194,10 @@ subsequent call will *re-open* the server using the provided options.
 added: v0.1.90
 -->
 
-* `path` {String}
-* `backlog` {Number}
+* `path` {string}
+* `backlog` {number}
 * `callback` {Function}
+* Returns: {net.Server}
 
 Start a local socket server listening for connections on the given `path`.
 
@@ -211,7 +223,7 @@ double-backslashes, such as:
 
 ```js
 net.createServer().listen(
-    path.join('\\\\?\\pipe', process.cwd(), 'myctl'));
+  path.join('\\\\?\\pipe', process.cwd(), 'myctl'));
 ```
 
 The parameter `backlog` behaves the same as in
@@ -224,6 +236,7 @@ subsequent call will *re-open* the server using the provided options.
 <!-- YAML
 added: v0.1.90
 -->
+* Returns: {net.Server}
 
 Begin accepting connections on the specified `port` and `hostname`. If the
 `hostname` is omitted, the server will accept connections on any IPv6 address
@@ -286,22 +299,22 @@ with [`child_process.fork()`][].
 added: v0.9.1
 -->
 
+* Returns: {net.Server}
+
 Opposite of `unref`, calling `ref` on a previously `unref`d server will *not*
 let the program exit if it's the only server left (the default behavior). If
 the server is `ref`d calling `ref` again will have no effect.
-
-Returns `server`.
 
 ### server.unref()
 <!-- YAML
 added: v0.9.1
 -->
 
+* Returns: {net.Server}
+
 Calling `unref` on a server will allow the program to exit if this is the only
 active server in the event system. If the server is already `unref`d calling
 `unref` again will have no effect.
-
-Returns `server`.
 
 ## Class: net.Socket
 <!-- YAML
@@ -322,6 +335,7 @@ Construct a new socket object.
 
 `options` is an object with the following defaults:
 
+<!-- eslint-skip -->
 ```js
 {
   fd: null,
@@ -343,7 +357,7 @@ About `allowHalfOpen`, refer to [`net.createServer()`][] and [`'end'`][] event.
 added: v0.1.90
 -->
 
-* `had_error` {Boolean} `true` if the socket had a transmission error.
+* `had_error` {boolean} `true` if the socket had a transmission error.
 
 Emitted once the socket is fully closed. The argument `had_error` is a boolean
 which says if the socket was closed due to a transmission error.
@@ -410,10 +424,10 @@ added: v0.11.3
 Emitted after resolving the hostname but before connecting.
 Not applicable to UNIX sockets.
 
-* `err` {Error|Null} The error object.  See [`dns.lookup()`][].
-* `address` {String} The IP address.
-* `family` {String|Null} The address type.  See [`dns.lookup()`][].
-* `host` {String} The hostname.
+* `err` {Error|null} The error object.  See [`dns.lookup()`][].
+* `address` {string} The IP address.
+* `family` {string|null} The address type.  See [`dns.lookup()`][].
+* `host` {string} The hostname.
 
 ### Event: 'timeout'
 <!-- YAML
@@ -498,6 +512,10 @@ specifies:
 
   - `path`: Path the client should connect to (Required).
 
+For either case:
+
+* Returns: {net.Socket} The socket itself.
+
 Normally this method is not needed, as `net.createConnection` opens the
 socket. Use this only if you are implementing a custom Socket.
 
@@ -516,6 +534,8 @@ added: v0.1.90
 
 As [`socket.connect(options[, connectListener])`][`socket.connect(options, connectListener)`],
 with options as either `{port: port, host: host}` or `{path: path}`.
+
+* Returns: {net.Socket} The socket itself.
 
 ### socket.connecting
 <!-- YAML
@@ -547,6 +567,8 @@ connection is destroyed no further data can be transferred using it.
 added: v0.1.90
 -->
 
+* Returns: {net.Socket} The socket itself.
+
 Half-closes the socket. i.e., it sends a FIN packet. It is possible the
 server will still send some data.
 
@@ -572,6 +594,8 @@ The numeric representation of the local port. For example,
 
 ### socket.pause()
 
+* Returns: {net.Socket} The socket itself.
+
 Pauses the reading of data. That is, [`'data'`][] events will not be emitted.
 Useful to throttle back an upload.
 
@@ -580,11 +604,11 @@ Useful to throttle back an upload.
 added: v0.9.1
 -->
 
+* Returns: {net.Socket} The socket itself.
+
 Opposite of `unref`, calling `ref` on a previously `unref`d socket will *not*
 let the program exit if it's the only socket left (the default behavior). If
 the socket is `ref`d calling `ref` again will have no effect.
-
-Returns `socket`.
 
 ### socket.remoteAddress
 <!-- YAML
@@ -612,12 +636,16 @@ The numeric representation of the remote port. For example,
 
 ### socket.resume()
 
+* Returns: {net.Socket} The socket itself.
+
 Resumes reading after a call to [`pause()`][].
 
 ### socket.setEncoding([encoding])
 <!-- YAML
 added: v0.1.90
 -->
+
+* Returns: {net.Socket} The socket itself.
 
 Set the encoding for the socket as a [Readable Stream][]. See
 [`stream.setEncoding()`][] for more information.
@@ -626,6 +654,8 @@ Set the encoding for the socket as a [Readable Stream][]. See
 <!-- YAML
 added: v0.1.92
 -->
+
+* Returns: {net.Socket} The socket itself.
 
 Enable/disable keep-alive functionality, and optionally set the initial
 delay before the first keepalive probe is sent on an idle socket.
@@ -636,24 +666,24 @@ data packet received and the first keepalive probe. Setting 0 for
 initialDelay will leave the value unchanged from the default
 (or previous) setting. Defaults to `0`.
 
-Returns `socket`.
-
 ### socket.setNoDelay([noDelay])
 <!-- YAML
 added: v0.1.90
 -->
+
+* Returns: {net.Socket} The socket itself.
 
 Disables the Nagle algorithm. By default TCP connections use the Nagle
 algorithm, they buffer data before sending it off. Setting `true` for
 `noDelay` will immediately fire off data each time `socket.write()` is called.
 `noDelay` defaults to `true`.
 
-Returns `socket`.
-
 ### socket.setTimeout(timeout[, callback])
 <!-- YAML
 added: v0.1.90
 -->
+
+* Returns: {net.Socket} The socket itself.
 
 Sets the socket to timeout after `timeout` milliseconds of inactivity on
 the socket. By default `net.Socket` do not have a timeout.
@@ -667,18 +697,16 @@ If `timeout` is 0, then the existing idle timeout is disabled.
 The optional `callback` parameter will be added as a one time listener for the
 [`'timeout'`][] event.
 
-Returns `socket`.
-
 ### socket.unref()
 <!-- YAML
 added: v0.9.1
 -->
 
+* Returns: {net.Socket} The socket itself.
+
 Calling `unref` on a socket will allow the program to exit if this is the only
 active socket in the event system. If the socket is already `unref`d calling
 `unref` again will have no effect.
-
-Returns `socket`.
 
 ### socket.write(data[, encoding][, callback])
 <!-- YAML
@@ -834,12 +862,15 @@ automatically set as a listener for the [`'connection'`][] event.
 
 `options` is an object with the following defaults:
 
+<!-- eslint-skip -->
 ```js
 {
   allowHalfOpen: false,
   pauseOnConnect: false
 }
 ```
+
+* Returns: {net.Server}
 
 If `allowHalfOpen` is `true`, then the socket won't automatically send a FIN
 packet when the other end of the socket sends a FIN packet. The socket becomes

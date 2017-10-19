@@ -1,5 +1,7 @@
 # Zlib
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `zlib` module provides compression functionality implemented using Gzip and
@@ -65,11 +67,11 @@ const zlib = require('zlib');
 const http = require('http');
 const fs = require('fs');
 const request = http.get({ host: 'example.com',
-                         path: '/',
-                         port: 80,
-                         headers: { 'Accept-Encoding': 'gzip,deflate' } });
+                           path: '/',
+                           port: 80,
+                           headers: { 'Accept-Encoding': 'gzip,deflate' } });
 request.on('response', (response) => {
-  var output = fs.createWriteStream('example.com_index.html');
+  const output = fs.createWriteStream('example.com_index.html');
 
   switch (response.headers['content-encoding']) {
     // or, just use zlib.createUnzip() to handle both cases
@@ -84,7 +86,9 @@ request.on('response', (response) => {
       break;
   }
 });
+```
 
+```js
 // server example
 // Running a gzip operation on every request is quite expensive.
 // It would be much more efficient to cache the compressed buffer.
@@ -92,8 +96,8 @@ const zlib = require('zlib');
 const http = require('http');
 const fs = require('fs');
 http.createServer((request, response) => {
-  var raw = fs.createReadStream('index.html');
-  var acceptEncoding = request.headers['accept-encoding'];
+  const raw = fs.createReadStream('index.html');
+  let acceptEncoding = request.headers['accept-encoding'];
   if (!acceptEncoding) {
     acceptEncoding = '';
   }
@@ -123,13 +127,16 @@ method that is used to compressed the last chunk of input data:
 // This is a truncated version of the buffer from the above examples
 const buffer = Buffer.from('eJzT0yMA', 'base64');
 
-zlib.unzip(buffer, { finishFlush: zlib.Z_SYNC_FLUSH }, (err, buffer) => {
-  if (!err) {
-    console.log(buffer.toString());
-  } else {
-    // handle error
-  }
-});
+zlib.unzip(
+  buffer,
+  { finishFlush: zlib.Z_SYNC_FLUSH },
+  (err, buffer) => {
+    if (!err) {
+      console.log(buffer.toString());
+    } else {
+      // handle error
+    }
+  });
 ```
 
 This will not change the behavior in other error-throwing situations, e.g.
@@ -147,7 +154,7 @@ From `zlib/zconf.h`, modified to node.js's usage:
 The memory requirements for deflate are (in bytes):
 
 ```js
-(1 << (windowBits+2)) +  (1 << (memLevel+9))
+(1 << (windowBits + 2)) + (1 << (memLevel + 9));
 ```
 
 That is: 128K for windowBits=15  +  128K for memLevel = 8
@@ -157,7 +164,7 @@ For example, to reduce the default memory requirements from 256K to 128K, the
 options should be set to:
 
 ```js
-{ windowBits: 14, memLevel: 7 }
+const options = { windowBits: 14, memLevel: 7 };
 ```
 
 This will, however, generally degrade compression.
@@ -165,7 +172,7 @@ This will, however, generally degrade compression.
 The memory requirements for inflate are (in bytes)
 
 ```js
-1 << windowBits
+1 << windowBits;
 ```
 
 That is, 32K for windowBits=15 (default value) plus a few kilobytes
@@ -407,6 +414,10 @@ added: v0.5.8
 -->
 
 Returns a new [DeflateRaw][] object with an [options][].
+
+*Note*: The zlib library rejects requests for 256-byte windows (i.e.,
+`{ windowBits: 8 }` in `options`). An `Error` will be thrown when creating a
+[DeflateRaw][] object with this specific value of the `windowBits` option.
 
 ## zlib.createGunzip([options])
 <!-- YAML

@@ -1,17 +1,15 @@
 'use strict';
 const common = require('../common');
+if (!common.hasCrypto)
+  common.skip('missing crypto');
+
 const assert = require('assert');
 const fs = require('fs');
-
-if (!common.hasCrypto) {
-  common.skip('missing crypto');
-  return;
-}
 const crypto = require('crypto');
 
 // Test certificates
-const certPem = fs.readFileSync(common.fixturesDir + '/test_cert.pem', 'ascii');
-const keyPem = fs.readFileSync(common.fixturesDir + '/test_key.pem', 'ascii');
+const certPem = fs.readFileSync(`${common.fixturesDir}/test_cert.pem`, 'ascii');
+const keyPem = fs.readFileSync(`${common.fixturesDir}/test_key.pem`, 'ascii');
 
 // Test signing and verifying
 {

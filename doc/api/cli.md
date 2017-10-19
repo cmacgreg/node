@@ -1,5 +1,6 @@
 # Command Line Options
 
+<!--introduced_in=v5.9.1-->
 <!--type=misc-->
 
 Node.js comes with a variety of CLI options. These options expose built-in
@@ -249,15 +250,15 @@ added: v6.11.0
 -->
 
 Use OpenSSL's default CA store or use bundled Mozilla CA store as supplied by
-current NodeJS version. The default store is selectable at build-time.
+current Node.js version. The default store is selectable at build-time.
 
 Using OpenSSL store allows for external modifications of the store. For most
 Linux and BSD distributions, this store is maintained by the distribution
 maintainers and system administrators. OpenSSL CA store location is dependent on
 configuration of the OpenSSL library but this can be altered at runtime using
-environmental variables.
+environment variables.
 
-The bundled CA store, as supplied by NodeJS, is a snapshot of Mozilla CA store
+The bundled CA store, as supplied by Node.js, is a snapshot of Mozilla CA store
 that is fixed at release time. It is identical on all supported platforms.
 
 See `SSL_CERT_DIR` and `SSL_CERT_FILE`.
@@ -359,7 +360,7 @@ added: v6.11.0
 
 Load an OpenSSL configuration file on startup. Among other uses, this can be
 used to enable FIPS-compliant crypto if Node.js is built with `./configure
-\-\-openssl\-fips`.
+--openssl-fips`.
 
 If the [`--openssl-config`][] command line option is used, the environment
 variable is ignored.

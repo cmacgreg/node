@@ -360,7 +360,7 @@ TEST(function test_resolveTxt(done) {
     if (err) throw err;
     assert.strictEqual(records.length, 1);
     assert.ok(util.isArray(records[0]));
-    assert.strictEqual(records[0][0].indexOf('v=spf1'), 0);
+    assert(records[0][0].startsWith('v=spf1'));
     done();
   });
 
@@ -541,7 +541,7 @@ req.oncomplete = function(err, domains) {
 };
 
 process.on('exit', function() {
-  console.log(completed + ' tests completed');
+  console.log(`${completed} tests completed`);
   assert.strictEqual(running, false);
   assert.strictEqual(expected, completed);
   assert.ok(getaddrinfoCallbackCalled);

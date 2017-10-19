@@ -1,5 +1,7 @@
 # Util
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `util` module is primarily designed to support the needs of Node.js' own
@@ -15,7 +17,7 @@ const util = require('util');
 added: v0.11.3
 -->
 
-* `section` {String} A string identifying the portion of the application for
+* `section` {string} A string identifying the portion of the application for
   which the `debuglog` function is being created.
 * Returns: {Function} The logging function
 
@@ -59,7 +61,7 @@ it is marked as deprecated.
 const util = require('util');
 
 exports.puts = util.deprecate(function() {
-  for (var i = 0, len = arguments.length; i < len; ++i) {
+  for (let i = 0, len = arguments.length; i < len; ++i) {
     process.stdout.write(arguments[i] + '\n');
   }
 }, 'util.puts: Use console.log instead');
@@ -93,7 +95,7 @@ property take precedence over `--trace-deprecation` and
 added: v0.5.3
 -->
 
-* `format` {String} A `printf`-like format string.
+* `format` {string} A `printf`-like format string.
 
 The `util.format()` method returns a formatted string using the first argument
 as a `printf`-like format.
@@ -116,16 +118,17 @@ util.format('%s:%s', 'foo');
 // Returns: 'foo:%s'
 ```
 
-If there are more arguments passed to the `util.format()` method than the
-number of placeholders, the extra arguments are coerced into strings (for
-objects and symbols, `util.inspect()` is used) then concatenated to the
-returned string, each delimited by a space.
+If there are more arguments passed to the `util.format()` method than the number
+of placeholders, the extra arguments are coerced into strings then concatenated
+to the returned string, each delimited by a space. Excessive arguments whose
+`typeof` is `'object'` or `'symbol'` (except `null`) will be transformed by
+`util.inspect()`.
 
 ```js
 util.format('%s:%s', 'foo', 'bar', 'baz'); // 'foo:bar baz'
 ```
 
-If the first argument is not a format string then `util.format()` returns
+If the first argument is not a string then `util.format()` returns
 a string that is the concatenation of all arguments separated by spaces.
 Each argument is converted to a string using `util.inspect()`.
 
@@ -308,7 +311,8 @@ class Box {
 
     // Five space padding because that's the size of "Box< ".
     const padding = ' '.repeat(5);
-    const inner = util.inspect(this.value, newOptions).replace(/\n/g, '\n' + padding);
+    const inner = util.inspect(this.value, newOptions)
+                      .replace(/\n/g, '\n' + padding);
     return options.stylize('Box', 'special') + '< ' + inner + ' >';
   }
 }
@@ -391,7 +395,7 @@ deprecated: v0.11.3
 
 > Stability: 0 - Deprecated: Use [`console.error()`][] instead.
 
-* `string` {String} The message to print to `stderr`
+* `string` {string} The message to print to `stderr`
 
 Deprecated predecessor of `console.error`.
 
@@ -403,7 +407,7 @@ deprecated: v0.11.3
 
 > Stability: 0 - Deprecated: Use [`console.error()`][] instead.
 
-* `...strings` {String} The message to print to `stderr`
+* `...strings` {string} The message to print to `stderr`
 
 Deprecated predecessor of `console.error`.
 
@@ -426,7 +430,7 @@ const util = require('util');
 
 util.isArray([]);
 // Returns: true
-util.isArray(new Array);
+util.isArray(new Array());
 // Returns: true
 util.isArray({});
 // Returns: false
@@ -557,7 +561,7 @@ Returns `true` if the given `object` is a `Function`. Otherwise, returns
 const util = require('util');
 
 function Foo() {}
-const Bar = function() {};
+const Bar = () => {};
 
 util.isFunction({});
 // Returns: false
@@ -662,7 +666,7 @@ util.isObject(null);
 // Returns: false
 util.isObject({});
 // Returns: true
-util.isObject(function(){});
+util.isObject(function() {});
 // Returns: false
 ```
 
@@ -805,7 +809,7 @@ deprecated: v6.0.0
 
 > Stability: 0 - Deprecated: Use a third party module instead.
 
-* `string` {String}
+* `string` {string}
 
 The `util.log()` method prints the given `string` to `stdout` with an included
 timestamp.

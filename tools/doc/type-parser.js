@@ -5,12 +5,13 @@ const jsDocUrl = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/' +
 const jsPrimitiveUrl = 'https://developer.mozilla.org/en-US/docs/Web/' +
                        'JavaScript/Data_structures';
 const jsPrimitives = {
-  'Integer': 'Number',  // this is for extending
-  'Number': 'Number',
-  'String': 'String',
-  'Boolean': 'Boolean',
-  'Null': 'Null',
-  'Symbol': 'Symbol'
+  'boolean': 'Boolean',
+  'integer': 'Number', // not a primitive, used for clarification
+  'null': 'Null',
+  'number': 'Number',
+  'string': 'String',
+  'symbol': 'Symbol',
+  'undefined': 'Undefined'
 };
 const jsGlobalTypes = [
   'Error', 'Object', 'Function', 'Array', 'TypedArray', 'Uint8Array',
@@ -49,7 +50,16 @@ module.exports = {
       typeText = typeText.trim();
       if (typeText) {
         let typeUrl = null;
-        const primitive = jsPrimitives[typeText];
+
+        // To support type[], we store the full string and use
+        // the bracket-less version to lookup the type URL
+        const typeTextFull = typeText;
+        if (/\[]$/.test(typeText)) {
+          typeText = typeText.slice(0, -2);
+        }
+
+        const primitive = jsPrimitives[typeText.toLowerCase()];
+
         if (primitive !== undefined) {
           typeUrl = `${jsPrimitiveUrl}#${primitive}_type`;
         } else if (jsGlobalTypes.indexOf(typeText) !== -1) {
@@ -60,9 +70,10 @@ module.exports = {
 
         if (typeUrl) {
           typeLinks.push('<a href="' + typeUrl + '" class="type">&lt;' +
-            typeText + '&gt;</a>');
+            typeTextFull + '&gt;</a>');
         } else {
-          typeLinks.push('<span class="type">&lt;' + typeText + '&gt;</span>');
+          typeLinks.push('<span class="type">&lt;' + typeTextFull +
+                         '&gt;</span>');
         }
       }
     });

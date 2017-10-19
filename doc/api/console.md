@@ -1,5 +1,7 @@
 # Console
 
+<!--introduced_in=v0.10.13-->
+
 > Stability: 2 - Stable
 
 The `console` module provides a simple debugging console that is similar to the
@@ -62,6 +64,9 @@ or `console.Console`:
 
 ```js
 const Console = require('console').Console;
+```
+
+```js
 const Console = console.Console;
 ```
 
@@ -127,7 +132,7 @@ the default behavior of `console` in Node.js.
 // new impl for assert without monkey-patching.
 const myConsole = Object.create(console, {
   assert: {
-    value: function assert(assertion, message, ...args) {
+    value(assertion, message, ...args) {
       try {
         console.assert(assertion, message, ...args);
       } catch (err) {
@@ -155,6 +160,11 @@ console.log('this will also print');
 <!-- YAML
 added: v0.1.101
 -->
+* `obj` {any}
+* `options` {Object}
+  * `showHidden` {boolean}
+  * `depth` {number}
+  * `colors` {boolean}
 
 Uses [`util.inspect()`][] on `obj` and prints the resulting string to `stdout`.
 This function bypasses any custom `inspect()` function defined on `obj`. An
@@ -219,14 +229,13 @@ console.log('count:', count);
 // Prints: count: 5, to stdout
 ```
 
-If formatting elements (e.g. `%d`) are not found in the first string then
-[`util.inspect()`][] is called on each argument and the resulting string
-values are concatenated. See [`util.format()`][] for more information.
+See [`util.format()`][] for more information.
 
 ### console.time(label)
 <!-- YAML
 added: v0.1.104
 -->
+* `label` {string}
 
 Starts a timer that can be used to compute the duration of an operation. Timers
 are identified by a unique `label`. Use the same `label` when you call
@@ -237,15 +246,14 @@ milliseconds to `stdout`. Timer durations are accurate to the sub-millisecond.
 <!-- YAML
 added: v0.1.104
 -->
+* `label` {string}
 
 Stops a timer that was previously started by calling [`console.time()`][] and
 prints the result to `stdout`:
 
 ```js
 console.time('100-elements');
-for (let i = 0; i < 100; i++) {
-  ;
-}
+for (let i = 0; i < 100; i++) ;
 console.timeEnd('100-elements');
 // prints 100-elements: 225.438ms
 ```

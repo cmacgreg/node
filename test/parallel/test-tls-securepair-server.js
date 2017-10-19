@@ -1,19 +1,13 @@
 'use strict';
 const common = require('../common');
-const assert = require('assert');
-
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
 
-if (!common.opensslCli) {
+if (!common.opensslCli)
   common.skip('missing openssl-cli');
-  return;
-}
 
+const assert = require('assert');
 const tls = require('tls');
-
 const join = require('path').join;
 const net = require('net');
 const fs = require('fs');
@@ -23,11 +17,11 @@ const key = fs.readFileSync(join(common.fixturesDir, 'agent.key')).toString();
 const cert = fs.readFileSync(join(common.fixturesDir, 'agent.crt')).toString();
 
 function log(a) {
-  console.error('***server*** ' + a);
+  console.error(`***server*** ${a}`);
 }
 
 const server = net.createServer(common.mustCall(function(socket) {
-  log('connection fd=' + socket.fd);
+  log(`connection fd=${socket.fd}`);
   const sslcontext = tls.createSecureContext({key: key, cert: cert});
   sslcontext.context.setCiphers('RC4-SHA:AES128-SHA:AES256-SHA');
 
@@ -49,7 +43,7 @@ const server = net.createServer(common.mustCall(function(socket) {
   });
 
   pair.cleartext.on('data', function(data) {
-    log('read bytes ' + data.length);
+    log(`read bytes ${data.length}`);
     pair.cleartext.write(data);
   });
 

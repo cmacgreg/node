@@ -1,16 +1,15 @@
 'use strict';
 const common = require('../common');
 
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
+
 const tls = require('tls');
 const net = require('net');
 
 const server = net.Server(common.mustCall(function(raw) {
   const pair = tls.createSecurePair(null, true, false, false);
-  pair.on('error', function() {});
+  pair.on('error', () => {});
   pair.ssl.setSNICallback(common.mustCall(function() {
     raw.destroy();
     server.close();

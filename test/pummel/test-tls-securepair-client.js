@@ -1,17 +1,12 @@
 'use strict';
-//
 
 const common = require('../common');
 
-if (!common.opensslCli) {
+if (!common.opensslCli)
   common.skip('node compiled without OpenSSL CLI.');
-  return;
-}
 
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
 
 const join = require('path').join;
 const net = require('net');
@@ -63,7 +58,7 @@ function test(keyfn, certfn, check, next) {
     console.error(state);
     switch (state) {
       case 'WAIT-ACCEPT':
-        if (/ACCEPT/g.test(serverStdoutBuffer)) {
+        if (/ACCEPT/.test(serverStdoutBuffer)) {
           // Give s_server half a second to start up.
           setTimeout(startClient, 500);
           state = 'WAIT-HELLO';
@@ -71,7 +66,7 @@ function test(keyfn, certfn, check, next) {
         break;
 
       case 'WAIT-HELLO':
-        if (/hello/g.test(serverStdoutBuffer)) {
+        if (/hello/.test(serverStdoutBuffer)) {
 
           // End the current SSL connection and exit.
           // See s_server(1ssl).
@@ -145,15 +140,15 @@ function test(keyfn, certfn, check, next) {
     });
 
     pair.encrypted.on('error', function(err) {
-      console.log('encrypted error: ' + err);
+      console.log(`encrypted error: ${err}`);
     });
 
     s.on('error', function(err) {
-      console.log('socket error: ' + err);
+      console.log(`socket error: ${err}`);
     });
 
     pair.on('error', function(err) {
-      console.log('secure error: ' + err);
+      console.log(`secure error: ${err}`);
     });
   }
 

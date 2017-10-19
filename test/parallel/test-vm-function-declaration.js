@@ -7,7 +7,7 @@ const o = vm.createContext({ console: console });
 
 // Function declaration and expression should both be copied to the
 // sandboxed context.
-let code = 'var a = function() {};\n';
+let code = 'var a = function () {};\n';
 code += 'function b(){}\n';
 
 // Grab the global b function as the completion value, to ensure that
@@ -21,5 +21,3 @@ assert.strictEqual(res.name, 'b', 'res should be named b');
 assert.strictEqual(typeof o.a, 'function', 'a should be function');
 assert.strictEqual(typeof o.b, 'function', 'b should be function');
 assert.strictEqual(res, o.b, 'result should be global b function');
-
-console.log('ok');

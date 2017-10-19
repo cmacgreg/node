@@ -13,7 +13,7 @@ function unlink(pathname) {
 common.refreshTmpDir();
 
 {
-  const pathname = common.tmpDir + '/test1';
+  const pathname = `${common.tmpDir}/test1`;
 
   unlink(pathname);
 
@@ -28,7 +28,7 @@ common.refreshTmpDir();
 }
 
 {
-  const pathname = common.tmpDir + '/test2';
+  const pathname = `${common.tmpDir}/test2`;
 
   unlink(pathname);
 
@@ -43,7 +43,7 @@ common.refreshTmpDir();
 }
 
 {
-  const pathname = common.tmpDir + '/test3';
+  const pathname = `${common.tmpDir}/test3`;
 
   unlink(pathname);
   fs.mkdirSync(pathname);
@@ -56,4 +56,4 @@ common.refreshTmpDir();
 
 // Keep the event loop alive so the async mkdir() requests
 // have a chance to run (since they don't ref the event loop).
-process.nextTick(function() {});
+process.nextTick(() => {});

@@ -1,11 +1,9 @@
 'use strict';
-const assert = require('assert');
 const common = require('../common');
-
-if (!common.hasCrypto) {
+if (!common.hasCrypto)
   common.skip('missing crypto');
-  return;
-}
+
+const assert = require('assert');
 const tls = require('tls');
 
 // Omitting the cert or pfx option to tls.createServer() should not throw.
@@ -20,7 +18,8 @@ tls.createServer(assert.fail)
 tls.createServer({})
   .listen(0, common.mustCall(close));
 
-assert.throws(() => tls.createServer('this is not valid'), TypeError);
+assert.throws(() => tls.createServer('this is not valid'),
+              /^TypeError: options must be an object$/);
 
 tls.createServer()
   .listen(0, common.mustCall(close));

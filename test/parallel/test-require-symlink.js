@@ -4,8 +4,7 @@ const common = require('../common');
 const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
-const exec = require('child_process').exec;
-const spawn = require('child_process').spawn;
+const { exec, spawn } = require('child_process');
 
 common.refreshTmpDir();
 
@@ -26,10 +25,8 @@ if (common.isWindows) {
   // On Windows, creating symlinks requires admin privileges.
   // We'll only try to run symlink test if we have enough privileges.
   exec('whoami /priv', function(err, o) {
-    if (err || !o.includes('SeCreateSymbolicLinkPrivilege')) {
+    if (err || !o.includes('SeCreateSymbolicLinkPrivilege'))
       common.skip('insufficient privileges');
-      return;
-    }
 
     test();
   });

@@ -1,10 +1,12 @@
 'use strict';
 const common = require('../common');
+if (common.inFreeBSDJail)
+  common.skip('in a FreeBSD jail');
+
 const assert = require('assert');
 const dgram = require('dgram');
 const util = require('util');
 const networkInterfaces = require('os').networkInterfaces();
-const Buffer = require('buffer').Buffer;
 const fork = require('child_process').fork;
 const LOCAL_BROADCAST_HOST = '255.255.255.255';
 const TIMEOUT = common.platformTimeout(5000);
@@ -14,11 +16,6 @@ const messages = [
   Buffer.from('Third message to send'),
   Buffer.from('Fourth message to send')
 ];
-
-if (common.inFreeBSDJail) {
-  common.skip('in a FreeBSD jail');
-  return;
-}
 
 let bindAddress = null;
 

@@ -1,5 +1,7 @@
 # Stream
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 A stream is an abstract interface for working with streaming data in Node.js.
@@ -66,8 +68,8 @@ buffer that can be retrieved using `writable._writableState.getBuffer()` or
 
 The amount of data potentially buffered depends on the `highWaterMark` option
 passed into the streams constructor. For normal streams, the `highWaterMark`
-option specifies a total number of bytes. For streams operating in object mode,
-the `highWaterMark` specifies a total number of objects.
+option specifies a [total number of bytes][hwm-gotcha]. For streams operating
+in object mode, the `highWaterMark` specifies a total number of objects.
 
 Data is buffered in Readable streams when the implementation calls
 [`stream.push(chunk)`][stream-push]. If the consumer of the Stream does not
@@ -112,7 +114,7 @@ that implements an HTTP server:
 ```js
 const http = require('http');
 
-const server = http.createServer( (req, res) => {
+const server = http.createServer((req, res) => {
   // req is an http.IncomingMessage, which is a Readable Stream
   // res is an http.ServerResponse, which is a Writable Stream
 
@@ -134,7 +136,7 @@ const server = http.createServer( (req, res) => {
       res.write(typeof data);
       res.end();
     } catch (er) {
-      // uh oh!  bad json!
+      // uh oh! bad json!
       res.statusCode = 400;
       return res.end(`error: ${er.message}`);
     }
@@ -143,12 +145,12 @@ const server = http.createServer( (req, res) => {
 
 server.listen(1337);
 
-// $ curl localhost:1337 -d '{}'
+// $ curl localhost:1337 -d "{}"
 // object
-// $ curl localhost:1337 -d '"foo"'
+// $ curl localhost:1337 -d "\"foo\""
 // string
-// $ curl localhost:1337 -d 'not json'
-// error: Unexpected token o
+// $ curl localhost:1337 -d "not json"
+// error: Unexpected token o in JSON at position 1
 ```
 
 [Writable][] streams (such as `res` in the example) expose methods such as
@@ -237,7 +239,7 @@ function writeOneMillionTimes(writer, data, encoding, callback) {
   let i = 1000000;
   write();
   function write() {
-    var ok = true;
+    let ok = true;
     do {
       i--;
       if (i === 0) {
@@ -280,7 +282,7 @@ has been called, and all data has been flushed to the underlying system.
 
 ```js
 const writer = getWritableStreamSomehow();
-for (var i = 0; i < 100; i ++) {
+for (let i = 0; i < 100; i++) {
   writer.write(`hello, #${i}!\n`);
 }
 writer.end('This is the end\n');
@@ -354,10 +356,10 @@ See also: [`writable.uncork()`][].
 added: v0.9.4
 -->
 
-* `chunk` {String|Buffer|any} Optional data to write. For streams not operating
+* `chunk` {string|Buffer|any} Optional data to write. For streams not operating
   in object mode, `chunk` must be a string or a `Buffer`. For object mode
   streams, `chunk` may be any JavaScript value other than `null`.
-* `encoding` {String} The encoding, if `chunk` is a String
+* `encoding` {string} The encoding, if `chunk` is a String
 * `callback` {Function} Optional callback for when the stream is finished
 
 Calling the `writable.end()` method signals that no more data will be written
@@ -382,7 +384,7 @@ file.end('world!');
 added: v0.11.15
 -->
 
-* `encoding` {String} The new default encoding
+* `encoding` {string} The new default encoding
 * Returns: `this`
 
 The `writable.setDefaultEncoding()` method sets the default `encoding` for a
@@ -431,10 +433,10 @@ See also: [`writable.cork()`][].
 added: v0.9.4
 -->
 
-* `chunk` {String|Buffer} The data to write
-* `encoding` {String} The encoding, if `chunk` is a String
+* `chunk` {string|Buffer} The data to write
+* `encoding` {string} The encoding, if `chunk` is a String
 * `callback` {Function} Callback for when this chunk of data is flushed
-* Returns: {Boolean} `false` if the stream wishes for the calling code to
+* Returns: {boolean} `false` if the stream wishes for the calling code to
   wait for the `'drain'` event to be emitted before continuing to write
   additional data; otherwise `true`.
 
@@ -474,18 +476,18 @@ possible to respect backpressure and avoid memory issues using the
 [`'drain'`][] event:
 
 ```js
-function write (data, cb) {
+function write(data, cb) {
   if (!stream.write(data)) {
-    stream.once('drain', cb)
+    stream.once('drain', cb);
   } else {
-    process.nextTick(cb)
+    process.nextTick(cb);
   }
 }
 
 // Wait for cb to be called before doing any other write.
 write('hello', () => {
-  console.log('write completed, do more writes now')
-})
+  console.log('write completed, do more writes now');
+});
 ```
 
 A Writable stream in object mode will always ignore the `encoding` argument.
@@ -566,9 +568,8 @@ possible states:
 * `readable._readableState.flowing = true`
 
 When `readable._readableState.flowing` is `null`, no mechanism for consuming the
-streams data is provided so the stream will not generate its data.
-
-Attaching a listener for the `'data'` event, calling the `readable.pipe()`
+streams data is provided so the stream will not generate its data. While in this
+state, attaching a listener for the `'data'` event, calling the `readable.pipe()`
 method, or calling the `readable.resume()` method will switch
 `readable._readableState.flowing` to `true`, causing the Readable to begin
 actively emitting events as data is generated.
@@ -576,7 +577,22 @@ actively emitting events as data is generated.
 Calling `readable.pause()`, `readable.unpipe()`, or receiving "back pressure"
 will cause the `readable._readableState.flowing` to be set as `false`,
 temporarily halting the flowing of events but *not* halting the generation of
-data.
+data. While in this state, attaching a listener for the `'data'` event
+would not cause `readable._readableState.flowing` to switch to `true`.
+
+```js
+const { PassThrough, Writable } = require('stream');
+const pass = new PassThrough();
+const writable = new Writable();
+
+pass.pipe(writable);
+pass.unpipe(writable);
+// flowing is now false
+
+pass.on('data', (chunk) => { console.log(chunk.toString()); });
+pass.write('ok'); // will not emit 'data'
+pass.resume(); // must be called to make 'data' being emitted
+```
 
 While `readable._readableState.flowing` is `false`, data may be accumulating
 within the streams internal buffer.
@@ -616,7 +632,7 @@ Not all [Readable][] streams will emit the `'close'` event.
 added: v0.9.4
 -->
 
-* `chunk` {Buffer|String|any} The chunk of data. For streams that are not
+* `chunk` {Buffer|string|any} The chunk of data. For streams that are not
   operating in object mode, the chunk will be either a string or `Buffer`.
   For streams that are in object mode, the chunk can be any JavaScript value
   other than `null`.
@@ -675,7 +691,7 @@ added: v0.9.4
 * {Error}
 
 The `'error'` event may be emitted by a Readable implementation at any time.
-Typically, this may occur if the underlying stream in unable to generate data
+Typically, this may occur if the underlying stream is unable to generate data
 due to an underlying internal failure, or when a stream implementation attempts
 to push an invalid chunk of data.
 
@@ -725,14 +741,15 @@ end
 ```
 
 *Note*: In general, the `readable.pipe()` and `'data'` event mechanisms are
-preferred over the use of the `'readable'` event.
+easier to understand than the `'readable'` event.
+However, handling `'readable'` might result in increased throughput.
 
 ##### readable.isPaused()
 <!-- YAML
 added: v0.11.14
 -->
 
-* Returns: {Boolean}
+* Returns: {boolean}
 
 The `readable.isPaused()` method returns the current operating state of the
 Readable. This is used primarily by the mechanism that underlies the
@@ -740,13 +757,13 @@ Readable. This is used primarily by the mechanism that underlies the
 use this method directly.
 
 ```js
-const readable = new stream.Readable
+const readable = new stream.Readable();
 
-readable.isPaused() // === false
-readable.pause()
-readable.isPaused() // === true
-readable.resume()
-readable.isPaused() // === false
+readable.isPaused(); // === false
+readable.pause();
+readable.isPaused(); // === true
+readable.resume();
+readable.isPaused(); // === false
 ```
 
 ##### readable.pause()
@@ -780,7 +797,7 @@ added: v0.9.4
 
 * `destination` {stream.Writable} The destination for writing data
 * `options` {Object} Pipe options
-  * `end` {Boolean} End the writer when the reader ends. Defaults to `true`.
+  * `end` {boolean} End the writer when the reader ends. Defaults to `true`.
 
 The `readable.pipe()` method attaches a [Writable][] stream to the `readable`,
 causing it to switch automatically into flowing mode and push all of its data
@@ -836,8 +853,8 @@ options.
 added: v0.9.4
 -->
 
-* `size` {Number} Optional argument to specify how much data to read.
-* Return {String|Buffer|Null}
+* `size` {number} Optional argument to specify how much data to read.
+* Return {string|Buffer|null}
 
 The `readable.read()` method pulls some data out of the internal buffer and
 returns it. If no data available to be read, `null` is returned. By default,
@@ -848,7 +865,7 @@ in object mode.
 The optional `size` argument specifies a specific number of bytes to read. If
 `size` bytes are not available to be read, `null` will be returned *unless*
 the stream has ended, in which case all of the data remaining in the internal
-buffer will be returned (*even if it exceeds `size` bytes*).
+buffer will be returned.
 
 If the `size` argument is not specified, all of the data contained in the
 internal buffer will be returned.
@@ -860,7 +877,7 @@ the internal buffer is fully drained.
 ```js
 const readable = getReadableStreamSomehow();
 readable.on('readable', () => {
-  var chunk;
+  let chunk;
   while (null !== (chunk = readable.read())) {
     console.log(`Received ${chunk.length} bytes of data.`);
   }
@@ -908,26 +925,23 @@ getReadableStreamSomehow()
 added: v0.9.4
 -->
 
-* `encoding` {String} The encoding to use.
+* `encoding` {string} The encoding to use.
 * Returns: `this`
 
-The `readable.setEncoding()` method sets the default character encoding for
+The `readable.setEncoding()` method sets the character encoding for
 data read from the Readable stream.
 
-Setting an encoding causes the stream data
-to be returned as string of the specified encoding rather than as `Buffer`
+By default, no encoding is assigned and stream data will be returned as
+`Buffer` objects. Setting an encoding causes the stream data
+to be returned as strings of the specified encoding rather than as `Buffer`
 objects. For instance, calling `readable.setEncoding('utf8')` will cause the
-output data will be interpreted as UTF-8 data, and passed as strings. Calling
+output data to be interpreted as UTF-8 data, and passed as strings. Calling
 `readable.setEncoding('hex')` will cause the data to be encoded in hexadecimal
 string format.
 
 The Readable stream will properly handle multi-byte characters delivered through
 the stream that would otherwise become improperly decoded if simply pulled from
 the stream as `Buffer` objects.
-
-Encoding can be disabled by calling `readable.setEncoding(null)`. This approach
-is useful when working with binary data or with large multi-byte strings spread
-out over multiple chunks.
 
 ```js
 const readable = getReadableStreamSomehow();
@@ -972,7 +986,7 @@ setTimeout(() => {
 added: v0.9.11
 -->
 
-* `chunk` {Buffer|String} Chunk of data to unshift onto the read queue
+* `chunk` {Buffer|string} Chunk of data to unshift onto the read queue
 
 The `readable.unshift()` method pushes a chunk of data back into the internal
 buffer. This is useful in certain situations where a stream is being consumed by
@@ -995,14 +1009,14 @@ function parseHeader(stream, callback) {
   stream.on('error', callback);
   stream.on('readable', onReadable);
   const decoder = new StringDecoder('utf8');
-  var header = '';
+  let header = '';
   function onReadable() {
-    var chunk;
+    let chunk;
     while (null !== (chunk = stream.read())) {
-      var str = decoder.write(chunk);
+      const str = decoder.write(chunk);
       if (str.match(/\n\n/)) {
         // found the header boundary
-        var split = str.split(/\n\n/);
+        const split = str.split(/\n\n/);
         header += split.shift();
         const remaining = split.join('\n\n');
         const buf = Buffer.from(remaining, 'utf8');
@@ -1056,7 +1070,7 @@ For example:
 ```js
 const OldReader = require('./old-api-module.js').OldReader;
 const Readable = require('stream').Readable;
-const oreader = new OldReader;
+const oreader = new OldReader();
 const myReader = new Readable().wrap(oreader);
 
 myReader.on('readable', () => {
@@ -1117,6 +1131,7 @@ const Writable = require('stream').Writable;
 class MyWritable extends Writable {
   constructor(options) {
     super(options);
+    // ...
   }
 }
 ```
@@ -1219,13 +1234,13 @@ constructor and implement the `writable._write()` method. The
 #### Constructor: new stream.Writable([options])
 
 * `options` {Object}
-  * `highWaterMark` {Number} Buffer level when
+  * `highWaterMark` {number} Buffer level when
     [`stream.write()`][stream-write] starts returning `false`. Defaults to
     `16384` (16kb), or `16` for `objectMode` streams.
-  * `decodeStrings` {Boolean} Whether or not to decode strings into
+  * `decodeStrings` {boolean} Whether or not to decode strings into
     Buffers before passing them to [`stream._write()`][stream-_write].
     Defaults to `true`
-  * `objectMode` {Boolean} Whether or not the
+  * `objectMode` {boolean} Whether or not the
     [`stream.write(anyObj)`][stream-write] is a valid operation. When set,
     it becomes possible to write JavaScript values other than string or
     `Buffer` if supported by the stream implementation. Defaults to `false`
@@ -1243,6 +1258,7 @@ class MyWritable extends Writable {
   constructor(options) {
     // Calls the stream.Writable() constructor
     super(options);
+    // ...
   }
 }
 ```
@@ -1278,9 +1294,9 @@ const myWritable = new Writable({
 
 #### writable.\_write(chunk, encoding, callback)
 
-* `chunk` {Buffer|String} The chunk to be written. Will **always**
+* `chunk` {Buffer|string} The chunk to be written. Will **always**
   be a buffer unless the `decodeStrings` option was set to `false`.
-* `encoding` {String} If the chunk is a string, then `encoding` is the
+* `encoding` {string} If the chunk is a string, then `encoding` is the
   character encoding of that string. If chunk is a `Buffer`, or if the
   stream is operating in object mode, `encoding` may be ignored.
 * `callback` {Function} Call this function (optionally with an error
@@ -1378,6 +1394,7 @@ const Writable = require('stream').Writable;
 class MyWritable extends Writable {
   constructor(options) {
     super(options);
+    // ...
   }
 
   _write(chunk, encoding, callback) {
@@ -1400,12 +1417,12 @@ constructor and implement the `readable._read()` method.
 #### new stream.Readable([options])
 
 * `options` {Object}
-  * `highWaterMark` {Number} The maximum number of bytes to store in
-    the internal buffer before ceasing to read from the underlying
-    resource. Defaults to `16384` (16kb), or `16` for `objectMode` streams
-  * `encoding` {String} If specified, then buffers will be decoded to
+  * `highWaterMark` {number} The maximum [number of bytes][hwm-gotcha] to store
+    in the internal buffer before ceasing to read from the underlying resource.
+    Defaults to `16384` (16kb), or `16` for `objectMode` streams
+  * `encoding` {string} If specified, then buffers will be decoded to
     strings using the specified encoding. Defaults to `null`
-  * `objectMode` {Boolean} Whether this stream should behave
+  * `objectMode` {boolean} Whether this stream should behave
     as a stream of objects. Meaning that [`stream.read(n)`][stream-read] returns
     a single value instead of a Buffer of size n. Defaults to `false`
   * `read` {Function} Implementation for the [`stream._read()`][stream-_read]
@@ -1420,6 +1437,7 @@ class MyReadable extends Readable {
   constructor(options) {
     // Calls the stream.Readable(options) constructor
     super(options);
+    // ...
   }
 }
 ```
@@ -1452,7 +1470,7 @@ const myReadable = new Readable({
 
 #### readable.\_read(size)
 
-* `size` {Number} Number of bytes to read asynchronously
+* `size` {number} Number of bytes to read asynchronously
 
 *Note*: **This function MUST NOT be called by application code directly.** It
 should be implemented by child classes, and called only by the internal Readable
@@ -1483,10 +1501,10 @@ user programs.
 
 #### readable.push(chunk[, encoding])
 
-* `chunk` {Buffer|Null|String} Chunk of data to push into the read queue
-* `encoding` {String} Encoding of String chunks.  Must be a valid
+* `chunk` {Buffer|null|string} Chunk of data to push into the read queue
+* `encoding` {string} Encoding of String chunks.  Must be a valid
   Buffer encoding, such as `'utf8'` or `'ascii'`
-* Returns {Boolean} `true` if additional chunks of data may continued to be
+* Returns {boolean} `true` if additional chunks of data may continued to be
   pushed; `false` otherwise.
 
 When `chunk` is a `Buffer` or `string`, the `chunk` of data will be added to the
@@ -1581,12 +1599,12 @@ class Counter extends Readable {
   }
 
   _read() {
-    var i = this._index++;
+    const i = this._index++;
     if (i > this._max)
       this.push(null);
     else {
-      var str = '' + i;
-      var buf = Buffer.from(str, 'ascii');
+      const str = '' + i;
+      const buf = Buffer.from(str, 'ascii');
       this.push(buf);
     }
   }
@@ -1615,13 +1633,13 @@ constructor and implement *both* the `readable._read()` and
 
 * `options` {Object} Passed to both Writable and Readable
   constructors. Also has the following fields:
-  * `allowHalfOpen` {Boolean} Defaults to `true`. If set to `false`, then
-    the stream will automatically end the readable side when the
-    writable side ends and vice versa.
-  * `readableObjectMode` {Boolean} Defaults to `false`. Sets `objectMode`
+  * `allowHalfOpen` {boolean} Defaults to `true`. If set to `false`, then
+    the stream will automatically end the writable side when the
+    readable side ends.
+  * `readableObjectMode` {boolean} Defaults to `false`. Sets `objectMode`
     for readable side of the stream. Has no effect if `objectMode`
     is `true`.
-  * `writableObjectMode` {Boolean} Defaults to `false`. Sets `objectMode`
+  * `writableObjectMode` {boolean} Defaults to `false`. Sets `objectMode`
     for writable side of the stream. Has no effect if `objectMode`
     is `true`.
 
@@ -1633,6 +1651,7 @@ const Duplex = require('stream').Duplex;
 class MyDuplex extends Duplex {
   constructor(options) {
     super(options);
+    // ...
   }
 }
 ```
@@ -1788,6 +1807,7 @@ const Transform = require('stream').Transform;
 class MyTransform extends Transform {
   constructor(options) {
     super(options);
+    // ...
   }
 }
 ```
@@ -1857,9 +1877,9 @@ user programs.
 
 #### transform.\_transform(chunk, encoding, callback)
 
-* `chunk` {Buffer|String} The chunk to be transformed. Will **always**
+* `chunk` {Buffer|string} The chunk to be transformed. Will **always**
   be a buffer unless the `decodeStrings` option was set to `false`.
-* `encoding` {String} If the chunk is a string, then this is the
+* `encoding` {string} If the chunk is a string, then this is the
   encoding type. If chunk is a buffer, then this is the special
   value - 'buffer', ignore it in this case.
 * `callback` {Function} A callback function (optionally with an error
@@ -1888,12 +1908,12 @@ argument is passed to the `callback`, it will be forwarded on to the
 `readable.push()` method. In other words the following are equivalent:
 
 ```js
-transform.prototype._transform = function (data, encoding, callback) {
+transform.prototype._transform = function(data, encoding, callback) {
   this.push(data);
   callback();
 };
 
-transform.prototype._transform = function (data, encoding, callback) {
+transform.prototype._transform = function(data, encoding, callback) {
   callback(null, data);
 };
 ```
@@ -1901,6 +1921,10 @@ transform.prototype._transform = function (data, encoding, callback) {
 The `transform._transform()` method is prefixed with an underscore because it
 is internal to the class that defines it, and should never be called directly by
 user programs.
+
+`transform._transform()` is never called in  parallel; streams implement a
+queue mechanism, and to receive the next chunk, `callback` must be
+called, either synchronously or asynchronously.
 
 #### Class: stream.PassThrough
 
@@ -2009,6 +2033,19 @@ has an interesting side effect. Because it *is* a call to
 However, because the argument is an empty string, no data is added to the
 readable buffer so there is nothing for a user to consume.
 
+### `highWaterMark` discrepency after calling `readable.setEncoding()`
+
+The use of `readable.setEncoding()` will change the behavior of how the
+`highWaterMark` operates in non-object mode.
+
+Typically, the size of the current buffer is measured against the
+`highWaterMark` in _bytes_. However, after `setEncoding()` is called, the
+comparison function will begin to measure the buffer's size in _characters_.
+
+This is not a problem in common cases with `latin1` or `ascii`. But it is
+advised to be mindful about this behavior when working with strings that could
+contain multi-byte characters.
+
 [`'data'`]: #stream_event_data
 [`'drain'`]: #stream_event_drain
 [`'end'`]: #stream_event_end
@@ -2041,6 +2078,9 @@ readable buffer so there is nothing for a user to consume.
 [HTTP requests, on the client]: http.html#http_class_http_clientrequest
 [HTTP responses, on the server]: http.html#http_class_http_serverresponse
 [http-incoming-message]: http.html#http_class_http_incomingmessage
+[Readable]: #stream_class_stream_readable
+[zlib]: zlib.html
+[hwm-gotcha]: #stream_highWaterMark_discrepency_after_calling_readable_setencoding
 [Readable]: #stream_class_stream_readable
 [stream-_flush]: #stream_transform_flush_callback
 [stream-_read]: #stream_readable_read_size_1

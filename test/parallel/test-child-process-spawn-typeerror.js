@@ -9,7 +9,7 @@ const cmd = common.isWindows ? 'rundll32' : 'ls';
 const invalidcmd = 'hopefully_you_dont_have_this_on_your_machine';
 const invalidArgsMsg = /Incorrect value of args option/;
 const invalidOptionsMsg = /"options" argument must be an object/;
-const empty = common.fixturesDir + '/empty.js';
+const empty = `${common.fixturesDir}/empty.js`;
 
 assert.throws(function() {
   const child = spawn(invalidcmd, 'this is not an array');
@@ -57,7 +57,7 @@ assert.throws(function() {
 // Argument types for combinatorics
 const a = [];
 const o = {};
-const c = function c() {};
+function c() {}
 const s = 'string';
 const u = undefined;
 const n = null;

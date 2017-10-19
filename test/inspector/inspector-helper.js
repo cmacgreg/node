@@ -43,11 +43,12 @@ function send(socket, message, id, callback) {
   for (let i = 0; i < messageBuf.length; i++)
     messageBuf[i] = messageBuf[i] ^ (1 << (i % 4));
   socket.write(
-      Buffer.concat([wsHeaderBuf.slice(0, maskOffset + 4), messageBuf]),
-      callback);
+    Buffer.concat([wsHeaderBuf.slice(0, maskOffset + 4), messageBuf]),
+    callback);
 }
 
 function parseWSFrame(buffer, handler) {
+  // Protocol described in https://tools.ietf.org/html/rfc6455#section-5
   if (buffer.length < 2)
     return 0;
   assert.strictEqual(0x81, buffer[0]);
@@ -59,13 +60,21 @@ function parseWSFrame(buffer, handler) {
     dataLen = buffer.readUInt16BE(2);
     bodyOffset = 4;
   } else if (dataLen === 127) {
-    dataLen = buffer.readUInt32BE(2);
+    assert(buffer[2] === 0 && buffer[3] === 0, 'Inspector message too big');
+    dataLen = buffer.readUIntBE(4, 6);
     bodyOffset = 10;
   }
   if (buffer.length < bodyOffset + dataLen)
     return 0;
-  const message = JSON.parse(
-      buffer.slice(bodyOffset, bodyOffset + dataLen).toString('utf8'));
+  const jsonPayload =
+    buffer.slice(bodyOffset, bodyOffset + dataLen).toString('utf8');
+  let message;
+  try {
+    message = JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error(`JSON.parse() failed for: ${jsonPayload}`);
+    throw e;
+  }
   if (DEBUG)
     console.log('[received]', JSON.stringify(message));
   handler(message);
@@ -120,7 +129,7 @@ function timeout(message, multiplicator) {
                     TIMEOUT * (multiplicator || 1));
 }
 
-const TestSession = function(socket, harness) {
+function TestSession(socket, harness) {
   this.mainScriptPath = harness.mainScriptPath;
   this.mainScriptId = null;
 
@@ -145,7 +154,7 @@ const TestSession = function(socket, harness) {
         buffer = buffer.slice(consumed);
     } while (consumed);
   }).on('close', () => assert(this.expectClose_, 'Socket closed prematurely'));
-};
+}
 
 TestSession.prototype.scriptUrlForId = function(id) {
   return this.scripts_[id];
@@ -167,13 +176,15 @@ TestSession.prototype.processMessage_ = function(message) {
     assert.strictEqual(id, this.expectedId_);
     this.expectedId_++;
     if (this.responseCheckers_[id]) {
-      assert(message['result'], JSON.stringify(message) + ' (response to ' +
-             JSON.stringify(this.messages_[id]) + ')');
+      const messageJSON = JSON.stringify(message);
+      const idJSON = JSON.stringify(this.messages_[id]);
+      assert(message['result'], `${messageJSON} (response to ${idJSON})`);
       this.responseCheckers_[id](message['result']);
       delete this.responseCheckers_[id];
     }
-    assert(!message['error'], JSON.stringify(message) + ' (replying to ' +
-           JSON.stringify(this.messages_[id]) + ')');
+    const messageJSON = JSON.stringify(message);
+    const idJSON = JSON.stringify(this.messages_[id]);
+    assert(!message['error'], `${messageJSON} (replying to ${idJSON})`);
     delete this.messages_[id];
     if (id === this.lastId_) {
       this.lastMessageResponseCallback_ && this.lastMessageResponseCallback_();
@@ -211,12 +222,8 @@ TestSession.prototype.sendInspectorCommands = function(commands) {
     };
     this.sendAll_(commands, () => {
       timeoutId = setTimeout(() => {
-        let s = '';
-        for (const id in this.messages_) {
-          s += id + ', ';
-        }
-        common.fail('Messages without response: ' +
-                    s.substring(0, s.length - 2));
+        common.fail(`Messages without response: ${
+          Object.keys(this.messages_).join(', ')}`);
       }, TIMEOUT);
     });
   });
@@ -239,7 +246,7 @@ TestSession.prototype.expectMessages = function(expects) {
   if (!(expects instanceof Array)) expects = [ expects ];
 
   const callback = this.createCallbackWithTimeout_(
-      'Matching response was not received:\n' + expects[0]);
+    `Matching response was not received:\n${expects[0]}`);
   this.messagefilter_ = (message) => {
     if (expects[0](message))
       expects.shift();
@@ -253,8 +260,8 @@ TestSession.prototype.expectMessages = function(expects) {
 
 TestSession.prototype.expectStderrOutput = function(regexp) {
   this.harness_.addStderrFilter(
-      regexp,
-      this.createCallbackWithTimeout_('Timed out waiting for ' + regexp));
+    regexp,
+    this.createCallbackWithTimeout_(`Timed out waiting for ${regexp}`));
   return this;
 };
 
@@ -295,14 +302,14 @@ TestSession.prototype.disconnect = function(childDone) {
 
 TestSession.prototype.testHttpResponse = function(path, check) {
   return this.enqueue((callback) =>
-      checkHttpResponse(this.harness_.port, path, (err, response) => {
-        check.call(this, err, response);
-        callback();
-      }));
+    checkHttpResponse(this.harness_.port, path, (err, response) => {
+      check.call(this, err, response);
+      callback();
+    }));
 };
 
 
-const Harness = function(port, childProcess) {
+function Harness(port, childProcess) {
   this.port = port;
   this.mainScriptPath = mainScript;
   this.stderrFilters_ = [];
@@ -312,7 +319,7 @@ const Harness = function(port, childProcess) {
   this.running_ = true;
 
   childProcess.stdout.on('data', makeBufferingDataCallback(
-      (line) => console.log('[out]', line)));
+    (line) => console.log('[out]', line)));
 
 
   childProcess.stderr.on('data', makeBufferingDataCallback((message) => {
@@ -327,7 +334,7 @@ const Harness = function(port, childProcess) {
     this.returnCode_ = code;
     this.running_ = false;
   });
-};
+}
 
 Harness.prototype.addStderrFilter = function(regexp, callback) {
   this.stderrFilters_.push((message) => {
@@ -429,7 +436,7 @@ Harness.prototype.expectShutDown = function(errorCode) {
 
 exports.startNodeForInspectorTest = function(callback) {
   const child = spawn(process.execPath,
-      [ '--inspect', '--debug-brk', mainScript ]);
+                      [ '--inspect', '--debug-brk', mainScript ]);
 
   const timeoutId = timeout('Child process did not start properly', 4);
 

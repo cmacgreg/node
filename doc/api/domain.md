@@ -1,5 +1,7 @@
 # Domain
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 0 - Deprecated
 
 **This module is pending deprecation**. Once a replacement API has been
@@ -162,7 +164,7 @@ function handleRequest(req, res) {
       setTimeout(() => {
         // Whoops!
         flerb.bark();
-      });
+      }, timeout);
       break;
     default:
       res.end('ok');

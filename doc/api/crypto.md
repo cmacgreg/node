@@ -1,5 +1,7 @@
 # Crypto
 
+<!--introduced_in=v0.3.6-->
+
 > Stability: 2 - Stable
 
 The `crypto` module provides cryptographic functionality that includes a set of
@@ -280,7 +282,8 @@ decipher.on('end', () => {
   // Prints: some clear text data
 });
 
-const encrypted = 'ca981be48e90867604588e75d04feabb63cc007a8f8ad89b10616ed84d815504';
+const encrypted =
+  'ca981be48e90867604588e75d04feabb63cc007a8f8ad89b10616ed84d815504';
 decipher.write(encrypted, 'hex');
 decipher.end();
 ```
@@ -304,7 +307,8 @@ Example: Using the [`decipher.update()`][] and [`decipher.final()`][] methods:
 const crypto = require('crypto');
 const decipher = crypto.createDecipher('aes192', 'a password');
 
-const encrypted = 'ca981be48e90867604588e75d04feabb63cc007a8f8ad89b10616ed84d815504';
+const encrypted =
+  'ca981be48e90867604588e75d04feabb63cc007a8f8ad89b10616ed84d815504';
 let decrypted = decipher.update(encrypted, 'hex', 'utf8');
 decrypted += decipher.final('utf8');
 console.log(decrypted);
@@ -542,7 +546,7 @@ const aliceSecret = alice.computeSecret(bobKey);
 const bobSecret = bob.computeSecret(aliceKey);
 
 assert.strictEqual(aliceSecret.toString('hex'), bobSecret.toString('hex'));
-  // OK
+// OK
 ```
 
 ### ecdh.computeSecret(other_public_key[, input_encoding][, output_encoding])
@@ -682,10 +686,11 @@ const hash = crypto.createHash('sha256');
 
 hash.on('readable', () => {
   const data = hash.read();
-  if (data)
+  if (data) {
     console.log(data.toString('hex'));
     // Prints:
     //   6a2da20943931e9834fc12cfe5bb47bbd9ae43489a30726962b576f4e3993e50
+  }
 });
 
 hash.write('some data to hash');
@@ -765,10 +770,11 @@ const hmac = crypto.createHmac('sha256', 'a secret');
 
 hmac.on('readable', () => {
   const data = hmac.read();
-  if (data)
+  if (data) {
     console.log(data.toString('hex'));
     // Prints:
     //   7fd04df92f636fd450bc841c9418e5825c17f33ad9c87c518115a45971f7f77e
+  }
 });
 
 hmac.write('some data to hash');
@@ -901,8 +907,8 @@ The `private_key` argument can be an object or a string. If `private_key` is a
 string, it is treated as a raw key with no passphrase. If `private_key` is an
 object, it is interpreted as a hash containing two properties:
 
-* `key` : {String} - PEM encoded private key
-* `passphrase` : {String} - passphrase for the private key
+* `key`: {string} - PEM encoded private key
+* `passphrase`: {string} - passphrase for the private key
 
 The `output_format` can specify one of `'latin1'`, `'hex'` or `'base64'`. If
 `output_format` is provided a string is returned; otherwise a [`Buffer`][] is
@@ -1410,8 +1416,8 @@ treated as the key with no passphrase and will use `RSA_PKCS1_OAEP_PADDING`.
 If `private_key` is an object, it is interpreted as a hash object with the
 keys:
 
-* `key` : {String} - PEM encoded private key
-* `passphrase` : {String} - Optional passphrase for the private key
+* `key`: {string} - PEM encoded private key
+* `passphrase`: {string} - Optional passphrase for the private key
 * `padding` : An optional padding value, one of the following:
   * `crypto.constants.RSA_NO_PADDING`
   * `crypto.constants.RSA_PKCS1_PADDING`
@@ -1447,8 +1453,8 @@ treated as the key with no passphrase and will use `RSA_PKCS1_PADDING`.
 If `private_key` is an object, it is interpreted as a hash object with the
 keys:
 
-* `key` : {String} - PEM encoded private key
-* `passphrase` : {String} - Optional passphrase for the private key
+* `key`: {string} - PEM encoded private key
+* `passphrase`: {string} - Optional passphrase for the private key
 * `padding` : An optional padding value, one of the following:
   * `crypto.constants.RSA_NO_PADDING`
   * `crypto.constants.RSA_PKCS1_PADDING`
@@ -1467,8 +1473,8 @@ treated as the key with no passphrase and will use `RSA_PKCS1_PADDING`.
 If `public_key` is an object, it is interpreted as a hash object with the
 keys:
 
-* `key` : {String} - PEM encoded public key
-* `passphrase` : {String} - Optional passphrase for the private key
+* `key`: {string} - PEM encoded public key
+* `passphrase`: {string} - Optional passphrase for the private key
 * `padding` : An optional padding value, one of the following:
   * `crypto.constants.RSA_NO_PADDING`
   * `crypto.constants.RSA_PKCS1_PADDING`
@@ -1491,8 +1497,8 @@ treated as the key with no passphrase and will use `RSA_PKCS1_OAEP_PADDING`.
 If `public_key` is an object, it is interpreted as a hash object with the
 keys:
 
-* `key` : {String} - PEM encoded public key
-* `passphrase` : {String} - Optional passphrase for the private key
+* `key`: {string} - PEM encoded public key
+* `passphrase`: {string} - Optional passphrase for the private key
 * `padding` : An optional padding value, one of the following:
   * `crypto.constants.RSA_NO_PADDING`
   * `crypto.constants.RSA_PKCS1_PADDING`
@@ -1536,7 +1542,8 @@ console.log(
   `${buf.length} bytes of random data: ${buf.toString('hex')}`);
 ```
 
-The `crypto.randomBytes()` method will block until there is sufficient entropy.
+The `crypto.randomBytes()` method will not complete until there is
+sufficient entropy available.
 This should normally never take longer than a few milliseconds. The only time
 when generating the random bytes may conceivably block for a longer period of
 time is right after boot, when the whole system is still low on entropy.
@@ -1645,7 +1652,7 @@ the `crypto`, `tls`, and `https` modules and are generally specific to OpenSSL.
   <tr>
     <td><code>SSL_OP_CIPHER_SERVER_PREFERENCE</code></td>
     <td>Attempts to use the server's preferences instead of the client's when
-    selecting a cipher. Behaviour depends on protocol version. See
+    selecting a cipher. Behavior depends on protocol version. See
     https://www.openssl.org/docs/man1.0.2/ssl/SSL_CTX_set_options.html.</td>
   </tr>
   <tr>

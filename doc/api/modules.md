@@ -1,5 +1,7 @@
 # Modules
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 <!--name=module-->
@@ -67,11 +69,7 @@ The module system is implemented in the `require('module')` module.
 
 When a file is run directly from Node.js, `require.main` is set to its
 `module`. That means that you can determine whether a file has been run
-directly by testing
-
-```js
-require.main === module
-```
+directly by testing `require.main === module`.
 
 For a file `foo.js`, this will be `true` if run via `node foo.js`, but
 `false` if run by `require('./foo')`.
@@ -441,7 +439,7 @@ Before a module's code is executed, Node.js will wrap it with a function
 wrapper that looks like the following:
 
 ```js
-(function (exports, require, module, __filename, __dirname) {
+(function(exports, require, module, __filename, __dirname) {
 // Your module code actually lives in here
 });
 ```
@@ -556,9 +554,11 @@ exports = { hello: false };  // Not exported, only available in the module
 When the `module.exports` property is being completely replaced by a new
 object, it is common to also reassign `exports`, for example:
 
+<!-- eslint-disable func-name-matching -->
 ```js
 module.exports = exports = function Constructor() {
-    // ... etc.
+  // ... etc.
+};
 ```
 
 To illustrate the behavior, imagine this hypothetical implementation of
@@ -586,7 +586,7 @@ function require(/* ... */) {
 added: v0.1.16
 -->
 
-* {String}
+* {string}
 
 The fully resolved filename to the module.
 
@@ -595,7 +595,7 @@ The fully resolved filename to the module.
 added: v0.1.16
 -->
 
-* {String}
+* {string}
 
 The identifier for the module.  Typically this is the fully resolved
 filename.
@@ -605,7 +605,7 @@ filename.
 added: v0.1.16
 -->
 
-* {Boolean}
+* {boolean}
 
 Whether or not the module is done loading, or is in the process of
 loading.
@@ -624,7 +624,7 @@ The module that first required this one.
 added: v0.5.1
 -->
 
-* `id` {String}
+* `id` {string}
 * Returns: {Object} `module.exports` from the resolved module
 
 The `module.require` method provides a way to load a module as if

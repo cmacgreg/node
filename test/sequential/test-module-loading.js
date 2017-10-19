@@ -4,6 +4,8 @@ const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
 
+const backslash = /\\/g;
+
 console.error('load test-module-loading.js');
 
 // assert that this is the main module.
@@ -73,7 +75,7 @@ assert.throws(
   function() {
     require('../fixtures/packages/invalid');
   },
-  /^SyntaxError: Error parsing \S+: Unexpected token , in JSON at position 1$/
+  /^SyntaxError: Error parsing .+: Unexpected token , in JSON at position 1$/
 );
 
 assert.strictEqual(require('../fixtures/packages/main').ok, 'ok',
@@ -108,7 +110,7 @@ try {
   assert.strictEqual('blah', e.message);
 }
 
-assert.strictEqual(require('path').dirname(__filename), __dirname);
+assert.strictEqual(path.dirname(__filename), __dirname);
 
 console.error('load custom file types with extensions');
 require.extensions['.test'] = function(module, filename) {
@@ -152,24 +154,24 @@ const msg = 'Load order incorrect.';
 require.extensions['.reg'] = require.extensions['.js'];
 require.extensions['.reg2'] = require.extensions['.js'];
 
-assert.strictEqual(require(loadOrder + 'file1').file1, 'file1', msg);
-assert.strictEqual(require(loadOrder + 'file2').file2, 'file2.js', msg);
+assert.strictEqual(require(`${loadOrder}file1`).file1, 'file1', msg);
+assert.strictEqual(require(`${loadOrder}file2`).file2, 'file2.js', msg);
 try {
-  require(loadOrder + 'file3');
+  require(`${loadOrder}file3`);
 } catch (e) {
   // Not a real .node module, but we know we require'd the right thing.
-  assert.ok(e.message.replace(/\\/g, '/').match(/file3\.node/));
+  assert.ok(/file3\.node/.test(e.message.replace(backslash, '/')));
 }
-assert.strictEqual(require(loadOrder + 'file4').file4, 'file4.reg', msg);
-assert.strictEqual(require(loadOrder + 'file5').file5, 'file5.reg2', msg);
-assert.strictEqual(require(loadOrder + 'file6').file6, 'file6/index.js', msg);
+assert.strictEqual(require(`${loadOrder}file4`).file4, 'file4.reg', msg);
+assert.strictEqual(require(`${loadOrder}file5`).file5, 'file5.reg2', msg);
+assert.strictEqual(require(`${loadOrder}file6`).file6, 'file6/index.js', msg);
 try {
-  require(loadOrder + 'file7');
+  require(`${loadOrder}file7`);
 } catch (e) {
-  assert.ok(e.message.replace(/\\/g, '/').match(/file7\/index\.node/));
+  assert.ok(/file7\/index\.node/.test(e.message.replace(backslash, '/')));
 }
-assert.strictEqual(require(loadOrder + 'file8').file8, 'file8/index.reg', msg);
-assert.strictEqual(require(loadOrder + 'file9').file9, 'file9/index.reg2', msg);
+assert.strictEqual(require(`${loadOrder}file8`).file8, 'file8/index.reg', msg);
+assert.strictEqual(require(`${loadOrder}file9`).file9, 'file9/index.reg2', msg);
 
 
 // make sure that module.require() is the same as
@@ -194,13 +196,13 @@ assert.deepStrictEqual(json, {
 
 const children = module.children.reduce(function red(set, child) {
   let id = path.relative(path.dirname(__dirname), child.id);
-  id = id.replace(/\\/g, '/');
+  id = id.replace(backslash, '/');
   set[id] = child.children.reduce(red, {});
   return set;
 }, {});
 
 assert.deepStrictEqual(children, {
-  'common.js': {},
+  'common/index.js': {},
   'fixtures/not-main-module.js': {},
   'fixtures/a.js': {
     'fixtures/b/c.js': {

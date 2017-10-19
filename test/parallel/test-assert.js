@@ -1,7 +1,7 @@
 'use strict';
 require('../common');
 const assert = require('assert');
-const a = require('assert');
+const a = assert;
 
 function makeBlock(f) {
   const args = Array.prototype.slice.call(arguments, 1);
@@ -139,7 +139,7 @@ assert.doesNotThrow(makeBlock(a.deepEqual, a1, a2));
 
 // having an identical prototype property
 const nbRoot = {
-  toString: function() { return this.first + ' ' + this.last; }
+  toString: function() { return `${this.first} ${this.last}`; }
 };
 
 function nameBuilder(first, last) {
@@ -240,7 +240,8 @@ assert.throws(
 {
   const re1 = /a/;
   re1.lastIndex = 3;
-  assert.throws(makeBlock(a.deepStrictEqual, re1, /a/));
+  assert.throws(makeBlock(a.deepStrictEqual, re1, /a/),
+                /^AssertionError: \/a\/ deepStrictEqual \/a\/$/);
 }
 
 // 7.4 - strict
@@ -262,10 +263,12 @@ assert.doesNotThrow(makeBlock(a.deepStrictEqual, {a: 4}, {a: 4}));
 assert.doesNotThrow(makeBlock(a.deepStrictEqual,
                               {a: 4, b: '2'},
                               {a: 4, b: '2'}));
-assert.throws(makeBlock(a.deepStrictEqual, [4], ['4']));
+assert.throws(makeBlock(a.deepStrictEqual, [4], ['4']),
+              /^AssertionError: \[ 4 ] deepStrictEqual \[ '4' ]$/);
 assert.throws(makeBlock(a.deepStrictEqual, {a: 4}, {a: 4, b: true}),
-              a.AssertionError);
-assert.throws(makeBlock(a.deepStrictEqual, ['a'], {0: 'a'}));
+              /^AssertionError: { a: 4 } deepStrictEqual { a: 4, b: true }$/);
+assert.throws(makeBlock(a.deepStrictEqual, ['a'], {0: 'a'}),
+              /^AssertionError: \[ 'a' ] deepStrictEqual { '0': 'a' }$/);
 //(although not necessarily the same order),
 assert.doesNotThrow(makeBlock(a.deepStrictEqual,
                               {a: 4, b: '1'},
@@ -342,9 +345,11 @@ function thrower(errorConstructor) {
 assert.throws(makeBlock(thrower, a.AssertionError),
               a.AssertionError, 'message');
 assert.throws(makeBlock(thrower, a.AssertionError), a.AssertionError);
+// eslint-disable-next-line no-restricted-syntax
 assert.throws(makeBlock(thrower, a.AssertionError));
 
 // if not passing an error, catch all.
+// eslint-disable-next-line no-restricted-syntax
 assert.throws(makeBlock(thrower, TypeError));
 
 // when passing a type, only catch errors of the appropriate type
@@ -394,10 +399,10 @@ assert.throws(() => {
 threw = false;
 try {
   assert.throws(
-      function() {
-        throw ({});
-      },
-      Array
+    function() {
+      throw ({});
+    },
+    Array
   );
 } catch (e) {
   threw = true;
@@ -423,7 +428,7 @@ try {
 
   AnotherErrorType = class extends Error {};
 
-  const functionThatThrows = function() {
+  const functionThatThrows = () => {
     throw new AnotherErrorType('foo');
   };
 
@@ -466,6 +471,7 @@ a.throws(makeBlock(a.deepEqual, args, []));
 
 // more checking that arguments objects are handled correctly
 {
+  // eslint-disable-next-line func-style
   const returnArguments = function() { return arguments; };
 
   const someArgs = returnArguments('a');
@@ -509,6 +515,7 @@ testAssertionMessage(/a/, '/a/');
 testAssertionMessage(/abc/gim, '/abc/gim');
 testAssertionMessage(function f() {}, '[Function: f]');
 testAssertionMessage(function() {}, '[Function]');
+testAssertionMessage(() => {}, '[Function]');
 testAssertionMessage({}, '{}');
 testAssertionMessage(circular, '{ y: 1, x: [Circular] }');
 testAssertionMessage({a: undefined, b: null}, '{ a: undefined, b: null }');
@@ -517,6 +524,7 @@ testAssertionMessage({a: NaN, b: Infinity, c: -Infinity},
 
 // #2893
 try {
+  // eslint-disable-next-line no-restricted-syntax
   assert.throws(function() {
     assert.ifError(null);
   });

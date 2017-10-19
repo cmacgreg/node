@@ -1,5 +1,7 @@
 # TLS (SSL)
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `tls` module provides an implementation of the Transport Layer Security
@@ -954,7 +956,7 @@ added: v0.11.13
     `"SSLv23_method"`. The possible values are listed as [SSL_METHODS][], use
     the function names as strings. For example, `"SSLv3_method"` to force SSL
     version 3.
-  * `secureOptions` {number} Optionally affect the OpenSSL protocol behaviour,
+  * `secureOptions` {number} Optionally affect the OpenSSL protocol behavior,
     which is not usually necessary. This should be used carefully if at all!
     Value is a numeric bitmask of the `SSL_OP_*` options from
     [OpenSSL Options][].
@@ -982,8 +984,8 @@ added: v0.3.2
 * `options` {Object}
   * `handshakeTimeout` {number} Abort the connection if the SSL/TLS handshake
     does not finish in the specified number of milliseconds. Defaults to `120`
-    seconds. A `'clientError'` is emitted on the `tls.Server` object whenever a
-    handshake times out.
+    seconds. A `'tlsClientError'` is emitted on the `tls.Server` object whenever
+    a handshake times out.
   * `requestCert` {boolean} If `true` the server will request a certificate from
     clients that connect and attempt to verify that certificate. Defaults to
     `false`.
@@ -1195,7 +1197,7 @@ stream.
 `tls.TLSSocket()`. For example, the code:
 
 ```js
-pair = tls.createSecurePair( ... );
+pair = tls.createSecurePair(/* ... */);
 pair.encrypted.pipe(socket);
 socket.pipe(pair.encrypted);
 ```

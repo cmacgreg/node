@@ -1,4 +1,15 @@
-#!/usr/bin/env python
+#!/bin/sh
+
+# Locate python2 interpreter and re-execute the script.  Note that the
+# mix of single and double quotes is intentional, as is the fact that
+# the ] goes on a new line.
+_=[ 'exec' '/bin/sh' '-c' '''
+which python2.7 >/dev/null && exec python2.7 "$0" "$@"
+which python2 >/dev/null && exec python2 "$0" "$@"
+exec python "$0" "$@"
+''' "$0" "$@"
+]
+del _
 
 import sys
 if sys.version_info[0] != 2 or sys.version_info[1] not in (6, 7):
@@ -40,14 +51,15 @@ import nodedownload
 # imports in tools/
 sys.path.insert(0, os.path.join(root_dir, 'tools'))
 import getmoduleversion
+from gyp_node import run_gyp
 
 # parse our options
 parser = optparse.OptionParser()
 
 valid_os = ('win', 'mac', 'solaris', 'freebsd', 'openbsd', 'linux',
             'android', 'aix')
-valid_arch = ('arm', 'arm64', 'ia32', 'mips', 'mipsel', 'ppc', 'ppc64', 'x32',
-              'x64', 'x86', 's390', 's390x')
+valid_arch = ('arm', 'arm64', 'ia32', 'mips', 'mipsel', 'mips64el', 'ppc',
+              'ppc64', 'x32','x64', 'x86', 's390', 's390x')
 valid_arm_float_abi = ('soft', 'softfp', 'hard')
 valid_arm_fpu = ('vfp', 'vfpv3', 'vfpv3-d16', 'neon')
 valid_mips_arch = ('loongson', 'r1', 'r2', 'r6', 'rx')
@@ -357,7 +369,7 @@ intl_optgroup.add_option('--without-intl',
     action='store_const',
     dest='with_intl',
     const='none',
-    help='Disable Intl, same as --with-intl=none')
+    help='Disable Intl, same as --with-intl=none (disables inspector)')
 
 intl_optgroup.add_option('--with-icu-path',
     action='store',
@@ -419,18 +431,18 @@ parser.add_option('--without-perfctr',
 # Dummy option for backwards compatibility
 parser.add_option('--with-snapshot',
     action='store_true',
-    dest='with_snapshot',
+    dest='unused_with_snapshot',
     help=optparse.SUPPRESS_HELP)
 
 parser.add_option('--without-snapshot',
     action='store_true',
-    dest='unused_without_snapshot',
+    dest='without_snapshot',
     help=optparse.SUPPRESS_HELP)
 
 parser.add_option('--without-ssl',
     action='store_true',
     dest='without_ssl',
-    help='build without SSL')
+    help='build without SSL (disables crypto, https, inspector, etc.)')
 
 parser.add_option('--xcode',
     action='store_true',
@@ -461,7 +473,7 @@ parser.add_option('--no-browser-globals',
 parser.add_option('--without-inspector',
     action='store_true',
     dest='without_inspector',
-    help='disable experimental V8 inspector support')
+    help='disable the V8 inspector protocol')
 
 parser.add_option('--shared',
     action='store_true',
@@ -617,8 +629,8 @@ def check_compiler(o):
   ok, is_clang, clang_version, gcc_version = try_check_compiler(CXX, 'c++')
   if not ok:
     warn('failed to autodetect C++ compiler version (CXX=%s)' % CXX)
-  elif clang_version < '3.4.0' if is_clang else gcc_version < '4.8.0':
-    warn('C++ compiler too old, need g++ 4.8 or clang++ 3.4 (CXX=%s)' % CXX)
+  elif clang_version < '3.4.2' if is_clang else gcc_version < '4.8.0':
+    warn('C++ compiler too old, need g++ 4.8 or clang++ 3.4.2 (CXX=%s)' % CXX)
 
   ok, is_clang, clang_version, gcc_version = try_check_compiler(CC, 'c')
   if not ok:
@@ -802,7 +814,7 @@ def configure_node(o):
   cross_compiling = (options.cross_compiling
                      if options.cross_compiling is not None
                      else target_arch != host_arch)
-  want_snapshots = 1 if options.with_snapshot else 0
+  want_snapshots = not options.without_snapshot
   o['variables']['want_separate_host_toolset'] = int(
       cross_compiling and want_snapshots)
 
@@ -946,7 +958,7 @@ def configure_v8(o):
   o['variables']['v8_no_strict_aliasing'] = 1  # Work around compiler bugs.
   o['variables']['v8_optimized_debug'] = 0  # Compile with -O0 in debug builds.
   o['variables']['v8_random_seed'] = 0  # Use a random seed for hash tables.
-  o['variables']['v8_use_snapshot'] = b(options.with_snapshot)
+  o['variables']['v8_use_snapshot'] = 'false' if options.without_snapshot else 'true'
   o['variables']['node_use_v8_platform'] = b(not options.without_v8_platform)
   o['variables']['node_use_bundled_v8'] = b(not options.without_bundled_v8)
   o['variables']['force_dynamic_crt'] = 1 if options.shared else 0
@@ -967,12 +979,18 @@ def configure_openssl(o):
     o['variables']['openssl_fips'] = options.openssl_fips
     fips_dir = os.path.join(root_dir, 'deps', 'openssl', 'fips')
     fips_ld = os.path.abspath(os.path.join(fips_dir, 'fipsld'))
+    # LINK is for Makefiles, LD/LDXX is for ninja
     o['make_fips_settings'] = [
       ['LINK', fips_ld + ' <(openssl_fips)/bin/fipsld'],
+      ['LD', fips_ld + ' <(openssl_fips)/bin/fipsld'],
+      ['LDXX', fips_ld + ' <(openssl_fips)/bin/fipsld'],
     ]
   else:
     o['variables']['openssl_fips'] = ''
-
+    try:
+      os.remove('config_fips.gypi')
+    except OSError:
+      pass
 
   if options.without_ssl:
     def without_ssl_error(option):
@@ -1370,7 +1388,7 @@ config = '\n'.join(map('='.join, config.iteritems())) + '\n'
 
 write('config.mk', do_not_edit + config)
 
-gyp_args = [sys.executable, 'tools/gyp_node.py', '--no-parallel']
+gyp_args = ['--no-parallel']
 
 if options.use_xcode:
   gyp_args += ['-f', 'xcode']
@@ -1389,4 +1407,4 @@ gyp_args += args
 if warn.warned:
   warn('warnings were emitted in the configure phase')
 
-sys.exit(subprocess.call(gyp_args))
+run_gyp(gyp_args)
