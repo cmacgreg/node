@@ -242,8 +242,6 @@
         'src/js_stream.h',
         'src/module_wrap.h',
         'src/node.h',
-        'src/node_http2_core.h',
-        'src/node_http2_core-inl.h',
         'src/node_buffer.h',
         'src/node_constants.h',
         'src/node_debug_options.h',
@@ -274,7 +272,7 @@
         'src/tracing/agent.h',
         'src/tracing/node_trace_buffer.h',
         'src/tracing/node_trace_writer.h',
-        'src/tracing/trace_event.h'
+        'src/tracing/trace_event.h',
         'src/util.h',
         'src/util-inl.h',
         'deps/http_parser/http_parser.h',

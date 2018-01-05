@@ -711,7 +711,7 @@ requests and responses.
 <a id="ERR_HTTP2_INVALID_HEADER_VALUE"></a>
 ### ERR_HTTP2_INVALID_HEADER_VALUE
 
-Used to indicate that an invalid HTTP/2 header value has been specified.
+Used to indicate that an invalid HTTP2 header value has been specified.
 
 <a id="ERR_HTTP2_INVALID_INFO_STATUS"></a>
 ### ERR_HTTP2_INVALID_INFO_STATUS
@@ -775,6 +775,16 @@ created.
 
 Used when a message payload is specified for an HTTP response code for which
 a payload is forbidden.
+
+<a id="ERR_HTTP2_PING_CANCEL"></a>
+### ERR_HTTP2_PING_CANCEL
+
+An HTTP/2 ping was cancelled.
+
+<a id="ERR_HTTP2_PING_LENGTH"></a>
+### ERR_HTTP2_PING_LENGTH
+
+HTTP/2 ping payloads must be exactly 8 bytes in length.
 
 <a id="ERR_HTTP2_PSEUDOHEADER_NOT_ALLOWED"></a>
 ### ERR_HTTP2_PSEUDOHEADER_NOT_ALLOWED

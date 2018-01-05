@@ -186,6 +186,7 @@ class ModuleWrap;
   V(kill_signal_string, "killSignal")                                         \
   V(length_string, "length")                                                  \
   V(mac_string, "mac")                                                        \
+  V(main_string, "main")                                                      \
   V(max_buffer_string, "maxBuffer")                                           \
   V(message_string, "message")                                                \
   V(minttl_string, "minttl")                                                  \
@@ -310,6 +311,8 @@ class ModuleWrap;
   V(context, v8::Context)                                                     \
   V(domain_array, v8::Array)                                                  \
   V(domains_stack_array, v8::Array)                                           \
+  V(http2ping_constructor_template, v8::ObjectTemplate)                       \
+  V(http2stream_constructor_template, v8::ObjectTemplate)                     \
   V(inspector_console_api_object, v8::Object)                                 \
   V(module_load_list_array, v8::Array)                                        \
   V(pbkdf2_constructor_template, v8::ObjectTemplate)                          \
