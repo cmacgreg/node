@@ -1,5 +1,7 @@
 # HTTP2
 
+<!--introduced_in=v8.4.0-->
+
 > Stability: 1 - Experimental
 
 The `http2` module provides an implementation of the [HTTP/2][] protocol. It
@@ -525,16 +527,28 @@ All other interactions will be routed directly to the socket.
 added: v8.4.0
 -->
 
+Provides miscellaneous information about the current state of the
+`Http2Session`.
+
 * Value: {Object}
-  * `effectiveLocalWindowSize` {number}
-  * `effectiveRecvDataLength` {number}
-  * `nextStreamID` {number}
-  * `localWindowSize` {number}
-  * `lastProcStreamID` {number}
-  * `remoteWindowSize` {number}
-  * `outboundQueueSize` {number}
-  * `deflateDynamicTableSize` {number}
-  * `inflateDynamicTableSize` {number}
+  * `effectiveLocalWindowSize` {number} The current local (receive)
+    flow control window size for the `Http2Session`.
+  * `effectiveRecvDataLength` {number} The current number of bytes
+    that have been received since the last flow control `WINDOW_UPDATE`.
+  * `nextStreamID` {number} The numeric identifier to be used the
+    next time a new `Http2Stream` is created by this `Http2Session`.
+  * `localWindowSize` {number} The number of bytes that the remote peer can
+    send without receiving a `WINDOW_UPDATE`.
+  * `lastProcStreamID` {number} The numeric id of the `Http2Stream`
+    for which a `HEADERS` or `DATA` frame was most recently received.
+  * `remoteWindowSize` {number} The number of bytes that this `Http2Session`
+    may send without receiving a `WINDOW_UPDATE`.
+  * `outboundQueueSize` {number} The number of frames currently within the
+    outbound queue for this `Http2Session`.
+  * `deflateDynamicTableSize` {number} The current size in bytes of the
+    outbound header compression state table.
+  * `inflateDynamicTableSize` {number} The current size in bytes of the
+    inbound header compression state table.
 
 An object describing the current status of this `Http2Session`.
 
@@ -851,14 +865,21 @@ req.setTimeout(5000, () => req.rstWithCancel());
 <!-- YAML
 added: v8.4.0
 -->
+Provides miscellaneous information about the current state of the
+`Http2Stream`.
 
 * Value: {Object}
-  * `localWindowSize` {number}
-  * `state` {number}
-  * `localClose` {number}
-  * `remoteClose` {number}
-  * `sumDependencyWeight` {number}
-  * `weight` {number}
+  * `localWindowSize` {number} The number of bytes the connected peer may send
+    for this `Http2Stream` without receiving a `WINDOW_UPDATE`.
+  * `state` {number} A flag indicating the low-level current state of the
+    `Http2Stream` as determined by nghttp2.
+  * `localClose` {number} `true` if this `Http2Stream` has been closed locally.
+  * `remoteClose` {number} `true` if this `Http2Stream` has been closed
+    remotely.
+  * `sumDependencyWeight` {number} The sum weight of all `Http2Stream`
+    instances that depend on this `Http2Stream` as specified using
+    `PRIORITY` frames.
+  * `weight` {number} The priority weight of this `Http2Stream`.
 
 A current state of this `Http2Stream`.
 
@@ -1262,7 +1283,7 @@ added: v8.4.0
 
 In `Http2Server`, there is no `'clientError'` event as there is in
 HTTP1. However, there are `'socketError'`, `'sessionError'`,  and
-`'streamError'`, for error happened on the socket, session or stream
+`'streamError'`, for error happened on the socket, session, or stream
 respectively.
 
 #### Event: 'socketError'
@@ -1855,7 +1876,7 @@ performance.
 There are several types of error conditions that may arise when using the
 `http2` module:
 
-Validation Errors occur when an incorrect argument, option or setting value is
+Validation Errors occur when an incorrect argument, option, or setting value is
 passed in. These will always be reported by a synchronous `throw`.
 
 State Errors occur when an action is attempted at an incorrect time (for
@@ -2023,7 +2044,7 @@ the status message for HTTP codes is ignored.
 ### ALPN negotiation
 
 ALPN negotiation allows to support both [HTTPS][] and HTTP/2 over
-the same socket. The `req` and `res` objects can be either HTTP/1 or
+the same socket. The `req` and `res` objects can be either HTTP/1 or
 HTTP/2, and an application **must** restrict itself to the public API of
 [HTTP/1][], and detect if it is possible to use the more advanced
 features of HTTP/2.
@@ -2125,6 +2146,18 @@ console.log(request.headers);
 
 See [Headers Object][].
 
+*Note*: In HTTP/2, the request path, host name, protocol, and method are
+represented as special headers prefixed with the `:` character (e.g. `':path'`).
+These special headers will be included in the `request.headers` object. Care
+must be taken not to inadvertently modify these special headers or errors may
+occur. For instance, removing all headers from the request will cause errors
+to occur:
+
+```js
+removeAllHeaders(request.headers);
+assert(request.url);   // Fails because the :path header has been removed
+```
+
 #### request.httpVersion
 <!-- YAML
 added: v8.4.0
@@ -2215,7 +2248,7 @@ added: v8.4.0
 * {net.Socket|tls.TLSSocket}
 
 Returns a Proxy object that acts as a `net.Socket` (or `tls.TLSSocket`) but
-applies getters, setters and methods based on HTTP/2 logic.
+applies getters, setters, and methods based on HTTP/2 logic.
 
 `destroyed`, `readable`, and `writable` properties will be retrieved from and
 set on `request.stream`.
@@ -2587,7 +2620,7 @@ added: v8.4.0
 * {net.Socket|tls.TLSSocket}
 
 Returns a Proxy object that acts as a `net.Socket` (or `tls.TLSSocket`) but
-applies getters, setters and methods based on HTTP/2 logic.
+applies getters, setters, and methods based on HTTP/2 logic.
 
 `destroyed`, `readable`, and `writable` properties will be retrieved from and
 set on `response.stream`.

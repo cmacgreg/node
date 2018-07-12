@@ -22,7 +22,7 @@
 #include "node.h"
 #include "node_buffer.h"
 
-#include "async-wrap-inl.h"
+#include "async_wrap-inl.h"
 #include "env.h"
 #include "env-inl.h"
 #include "util-inl.h"
@@ -336,7 +336,7 @@ class ZCtx : public AsyncWrap {
         }
         break;
       default:
-        CHECK(0 && "wtf?");
+        UNREACHABLE();
     }
 
     // pass any errors back to the main thread to deal with.
@@ -547,7 +547,7 @@ class ZCtx : public AsyncWrap {
             ->AdjustAmountOfExternalAllocatedMemory(kInflateContextSize);
         break;
       default:
-        CHECK(0 && "wtf?");
+        UNREACHABLE();
     }
 
     ctx->dictionary_ = reinterpret_cast<Bytef *>(dictionary);
@@ -701,4 +701,4 @@ void InitZlib(Local<Object> target,
 }  // anonymous namespace
 }  // namespace node
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(zlib, node::InitZlib)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(zlib, node::InitZlib)
